@@ -2648,14 +2648,18 @@ class AmoFinancePlugin(Star):
                         logger.debug("[amo_fin] 扣食材失败 %s: %s" % (item, exc))
 
         after: dict[str, Any] = {}
-        if data is not None:
+        if data is None:
+            # 2026-11-20：这一步以前是静默跳过的 —— 结果「自动喝水」返回 ok、水分一分没加。
+            # 找不到记忆库必须吵一句，否则面板上的饱食度/水分永远是假的。
+            logger.warning("[amo_fin] 没连上记忆库，这一顿的饱食度/水分没写进库（%s）" % dish)
+        else:
             try:
                 if satiety > 0:
                     after = data.eat(satiety, note=dish) or {}
                 if hydration > 0:
                     after = data.drink(hydration, note=dish) or after
             except Exception as exc:
-                logger.debug("[amo_fin] 记饱食度失败: %s" % exc)
+                logger.warning("[amo_fin] 记饱食度/水分失败（%s）: %s" % (dish, exc))
 
         return {
             "ok": True, "dish": dish, "method": mode,
