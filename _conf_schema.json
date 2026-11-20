@@ -1,0 +1,164 @@
+{
+  "enable": {
+    "type": "bool",
+    "description": "启用账本",
+    "default": true,
+    "hint": "关掉后终端不会扣钱，也不会记录任何流水。"
+  },
+  "salary": {
+    "type": "float",
+    "description": "月薪（税前，0 = 自动）",
+    "default": 0,
+    "hint": "填 0 就自动算：人格里写了「月薪/工资/薪资」就用那个数，没写按她所在城市的平均（一线 13000 / 新一线 10000 / 二线 7800 / 三线 6000）。填了数字就以这里为准。"
+  },
+  "invest_enable": {
+    "type": "bool",
+    "description": "模拟炒股",
+    "default": true,
+    "hint": "用余额里的钱做模拟买卖（A 股 / 港股 / 美股，按腾讯公开行情）。不联网、不开户、不碰真钱。"
+  },
+  "invest_auto_trade": {
+    "type": "bool",
+    "description": "她自己会买卖",
+    "default": true,
+    "hint": "买卖是她自己的事：每天看一眼，赚 8% 落袋、亏 10% 割肉、上头的日子自己加仓。打开「FX 战士」后改成赚 20%~30% 才卖、亏了反而补仓，一天最多四笔。"
+  },
+  "invest_watchlist": {
+    "type": "text",
+    "description": "自选股",
+    "default": "600519,300750,601318,000001,00700,AAPL",
+    "hint": "逗号分隔。A 股填 6 位代码，港股 5 位，美股字母。"
+  },
+  "invest_quote_ttl": {
+    "type": "int",
+    "description": "行情缓存秒数",
+    "default": 60,
+    "hint": "同一个代码多少秒内不重复请求，防止刷接口。"
+  },
+  "fx_hkd": {
+    "type": "float",
+    "description": "港币汇率（折人民币）",
+    "default": 0.92,
+    "hint": "只用于把港股资产折成人民币记账，不做交易。"
+  },
+  "fx_usd": {
+    "type": "float",
+    "description": "美元汇率（折人民币）",
+    "default": 7.15,
+    "hint": "只用于把美股资产折成人民币记账。"
+  },
+  "pay_day": {
+    "type": "int",
+    "description": "每月几号发工资",
+    "default": 10,
+    "hint": "1-28。发薪日当天自动入账，重启不会重复发。"
+  },
+  "initial_balance": {
+    "type": "float",
+    "description": "初始余额",
+    "default": 8000,
+    "hint": "只在第一次安装、账本还没有数据时生效。"
+  },
+  "initial_savings": {
+    "type": "float",
+    "description": "初始存款",
+    "default": 30000,
+    "hint": "同上，只初始化一次。"
+  },
+  "own_house": {
+    "type": "bool",
+    "description": "名下有房",
+    "default": false,
+    "hint": "打开后不再扣房租，但物业、水电、燃气照扣——房子是送的，住还是要花钱。"
+  },
+  "own_car": {
+    "type": "bool",
+    "description": "名下有车",
+    "default": false,
+    "hint": "打开后不再扣车贷，但车险、油费、停车照扣。"
+  },
+  "auto_fixed_expense": {
+    "type": "bool",
+    "description": "每月自动交固定支出",
+    "default": true,
+    "hint": "每月 1 号扣房租/物业/水电/网费/话费。关掉就只记账不自动扣。"
+  },
+  "prices": {
+    "type": "text",
+    "description": "物价表（JSON）",
+    "default": "",
+    "hint": "留空用内置价格。可覆盖单项，例如 {\"奶茶\": 22, \"外卖\": 40}。"
+  },
+  "daily_food_budget": {
+    "type": "float",
+    "description": "每日餐饮预算",
+    "default": 0,
+    "hint": "0 = 按城市档位自动（一线 110 / 新一线 90 / 二线 75）。"
+  },
+  "anxiety_threshold": {
+    "type": "float",
+    "description": "焦虑阈值",
+    "default": 0.5,
+    "hint": "余额撑不住固定支出的程度超过这个值，她会开始焦虑。0 = 总有安全感，1 = 只有快花光才焦虑。"
+  },
+  "invest_aggressive": {
+    "type": "bool",
+    "description": "FX 战士（激进交易）",
+    "default": true,
+    "hint": "她自己的风格：敢重仓、敢加仓，亏了不认输、赚了要吹。关掉就回到赚 8% 跑、亏 10% 割的散户模式。"
+  },
+  "invest_max_weight": {
+    "type": "float",
+    "description": "单只股票最多占总资产",
+    "default": 1.5,
+    "hint": "普通模式的参考值；FX 战士按杠杆倍数来，0.95~1.50 都是她的风格，不再卡 0.6。"
+  },
+  "invest_max_positions": {
+    "type": "int",
+    "description": "最多同时持有几只",
+    "default": 10,
+    "hint": "FX 战士默认 10 只，普通模式 3 只。满了要先卖才能买新的。"
+  },
+  "savings_auto_cover": {
+    "type": "bool",
+    "description": "卡里不够时自动从储蓄扣",
+    "default": true,
+    "hint": "她的钱就是她的钱：卡里 0、储蓄 2 万，不该被当成没钱。关掉就退回「卡里不够就花不了」。"
+  },
+  "savings_rate": {
+    "type": "float",
+    "description": "储蓄年化利率（%）",
+    "default": 1.5,
+    "hint": "只给储蓄计息，按天算、同一天不重复。借款没有利息（情侣之间不收），0 = 不计息。"
+  },
+  "auto_repay": {
+    "type": "bool",
+    "description": "她有钱了自动还他",
+    "default": true,
+    "hint": "每天最多还一次：先留够固定支出和一点生活费，剩下的拿一半还；还清为止。转账给她 = 还款，不是消费。"
+  },
+  "invest_leverage": {
+    "type": "int",
+    "default": 100,
+    "description": "股票杠杆倍数（1–500）：买股票可用（活期+储蓄）× 这个倍数，超出部分记成保证金借款",
+    "hint": "1=不加杠杆；100=一百倍（默认）；最高 500。杠杆越高越容易爆仓，亏到权益见底会强制清仓。"
+  },
+  "invest_anytime": {
+    "type": "bool",
+    "default": true,
+    "description": "非交易时段也允许下单（按最新价成交，不再等到第二天）",
+    "hint": "关掉就只在交易时段能买卖。"
+  },
+  "futures_enable": {
+    "type": "bool",
+    "default": true,
+    "description": "期货（内盘主力连续：螺纹/铁矿/沪金/原油/股指…），保证金交易、T+0",
+    "hint": "行情来自新浪公开接口，保证金 7%–15%，亏穿保证金会爆仓。"
+  },
+  "quote_source": {
+    "type": "string",
+    "default": "ths",
+    "description": "行情源：ths=同花顺（A 股），tencent=腾讯（港美股仍走腾讯）",
+    "hint": "同花顺拿不到时自动退回腾讯，不编价格。"
+  }
+}

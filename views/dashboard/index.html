@@ -1,0 +1,1010 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#f4f4f6" />
+  <title>我想永远陪着你-金融</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f4f4f6;
+  --card: #f4f4f6;
+  --line: #e7e2f0;
+  --text: #2c2738;
+  --muted: #857d94;
+  --pink: #e8489a;
+  --pink-soft: rgba(232, 72, 154, .12);
+  --ok: #0284c7;
+  --bad: #d93025;
+  --hover: #ece6f2;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #1e1e22;
+  --card: #1e1e22;
+  --line: #3a3a40;
+  --text: #f3eff8;
+  --muted: #a89fb8;
+  --pink: #f472b6;
+  --pink-soft: rgba(244, 114, 182, .16);
+  --ok: #38bdf8;
+  --bad: #fb7185;
+  --hover: #2a2434;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  width: 100%;
+  overflow-x: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+}
+
+body { padding: max(14px, env(safe-area-inset-top)) 14px calc(20px + env(safe-area-inset-bottom)); }
+
+.wrap { width: 100%; max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+
+header { display: flex; align-items: center; justify-content: space-between; padding: 2px; }
+
+.brand { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 650; letter-spacing: .4px; }
+
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--pink); box-shadow: 0 0 10px rgba(232, 72, 154, .45); }
+
+.icon-btn {
+  width: 32px; height: 32px;
+  display: grid; place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.icon-btn:hover { background: var(--hover); }
+
+.fin-tabs { display: flex; align-items: center; justify-content: space-between; gap: 2px; padding: 10px 0; margin: 0;
+  background: transparent; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 12; }
+.fin-tab { flex: 1 1 0; border: 0; background: transparent; color: var(--muted); text-align: center;
+  padding: 0 4px; border-radius: 0; font-size: 13px; line-height: 1.2; cursor: pointer; white-space: nowrap; }
+.fin-tab:hover { background: transparent; color: var(--text); }
+.fin-tab.on { background: transparent; color: var(--text); box-shadow: none; font-weight: 600; }
+.market-tabs { display: flex; gap: 6px; overflow-x: auto; padding: 6px 0; -webkit-overflow-scrolling: touch; }
+.market-tab { flex: 0 0 auto; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 12px; cursor: pointer; }
+.market-tab.on { background: var(--pink-soft); color: var(--pink); border-color: transparent; }
+.market-search { flex: 1; min-width: 0; padding: 7px 10px; border-radius: 10px; border: 1px solid var(--line); background: transparent; color: var(--text); font-size: 12.5px; }
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.card-title { display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 600; color: var(--muted); letter-spacing: .3px; }
+
+.pill {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: var(--pink-soft);
+  color: var(--pink);
+  font-weight: 600;
+}
+
+.pill.off { background: rgba(133, 125, 148, .16); color: var(--muted); }
+
+.kv { display: grid; grid-template-columns: 74px 1fr; gap: 6px 10px; margin: 0; font-size: 13px; }
+
+.kv dt { color: var(--muted); }
+
+.kv dd { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+.meta { font-size: 11.5px; color: var(--muted); }
+
+textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 52px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+textarea:focus { outline: none; border-color: var(--pink); }
+
+.row { display: flex; align-items: center; gap: 10px; }
+
+.btn {
+  border: none;
+  border-radius: 10px;
+  padding: 8px 18px;
+  background: var(--pink);
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.btn:disabled { opacity: .55; cursor: default; }
+
+.save-top { padding: 7px 16px; font-size: 12.5px; }
+
+.link {
+  border: none;
+  background: none;
+  color: var(--pink);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.hint { font-size: 11.5px; color: var(--muted); }
+
+.preview { display: flex; flex-direction: column; gap: 6px; }
+
+.preview img {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  display: block;
+}
+
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-height: 260px; overflow-y: auto; }
+
+.list li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12.5px;
+  padding: 5px 0;
+  border-bottom: 1px dashed var(--line);
+}
+
+.list li:last-child { border-bottom: none; }
+
+.list .t { color: var(--muted); font-variant-numeric: tabular-nums; min-width: 74px; }
+
+.list .p { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.list .s { font-size: 11px; font-variant-numeric: tabular-nums; }
+
+.list .ok { color: var(--ok); }
+
+.list .bad { color: var(--bad); }
+
+.list .empty { color: var(--muted); justify-content: center; border: none; }
+
+.foot { text-align: center; color: var(--muted); font-size: 11px; padding: 2px 0 4px; }
+
+/* ---------- 标签页 / 配置表单（0.12.0） ---------- */
+
+.tabs { display: flex; gap: 6px; }
+
+.tab {
+  flex: 1;
+  padding: 7px 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.tab.on { color: var(--pink); border-color: var(--pink); background: var(--pink-soft); }
+.tab:hover { background: var(--hover); }
+
+.pane { display: flex; flex-direction: column; gap: 12px; }
+.pane[hidden] { display: none; }
+
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field label { font-size: 11.5px; color: var(--muted); }
+
+.field input, .field select, .field textarea {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.field textarea { resize: vertical; min-height: 38px; }
+.field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--pink); }
+
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+.check { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--text); }
+.check input { width: 15px; height: 15px; accent-color: var(--pink); }
+
+#customBlock { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; border-top: 1px dashed var(--line); }
+#customBlock[hidden] { display: none; }
+
+/* ---------- 服装库（0.16.0） ---------- */
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.chip {
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.chip.on { color: var(--pink); border-color: var(--pink); background: var(--pink-soft); }
+
+.list li .wear, .list li .del {
+  border: none;
+  background: transparent;
+  color: var(--pink);
+  font-size: 11.5px;
+  cursor: pointer;
+  padding: 0 2px;
+  font-family: inherit;
+}
+
+.list li .del { color: var(--muted); }
+
+/* ---------- 语音面板（1.0.0） ---------- */
+
+.grow { flex: 1; min-width: 0; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.chip {
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.chip.on { color: var(--pink); border-color: var(--pink); background: var(--pink-soft); }
+
+.list li .act {
+  border: none;
+  background: transparent;
+  color: var(--pink);
+  font-size: 11.5px;
+  cursor: pointer;
+  padding: 0 2px;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+#testAudio { width: 100%; margin-top: 2px; }
+
+.voice-item { display: flex; align-items: baseline; gap: 8px; }
+.voice-item .vname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.voice-item .vmeta { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+/* 资产/工资两列 + 双击二级页 */
+.grid2.cards { align-items: stretch; }
+.grid2.cards .card { min-width: 0; }
+.grid2.cards .kv { grid-template-columns: 52px 1fr; font-size: 12.5px; }
+.brand { touch-action: manipulation; }
+.sheet {
+  position: fixed; inset: 0; z-index: 40;
+  background: var(--card); overflow-y: auto;
+  padding: max(12px, env(safe-area-inset-top)) 14px calc(20px + env(safe-area-inset-bottom));
+}
+.sheet[hidden] { display: none; }
+.sheet-head {
+  position: sticky; top: 0; z-index: 1;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 2px 10px; background: var(--card);
+  border-bottom: 1px solid var(--line); margin-bottom: 10px;
+}
+.sheet-body { display: flex; flex-direction: column; gap: 12px; max-width: 560px; margin: 0 auto; }
+@media (max-width: 380px) { .grid2.cards { grid-template-columns: 1fr; } }
+
+/* 一个框内左右分栏：资产/工资、身体/治疗报价 */
+.split { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 10px; }
+.split > .col { min-width: 0; }
+.split > .col:last-child { border-left: 0; padding-left: 0; }
+.split .sub-title { font-size: 12px; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
+.split .kv { grid-template-columns: 56px 1fr; font-size: 12px; }
+
+/* 卡内分区：资产 / 房车 / 投资 / 每月固定 用横线隔开，不再一人一个框 */
+.sep {
+  height: 1px;
+  margin: 14px 0 12px;
+  background: var(--line, rgba(128, 128, 128, .22));
+  border: 0;
+}
+.ownrow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 22px;
+  margin: 10px 0 6px;
+}
+.ownrow .check { margin: 0; }
+
+    </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand" id="brandTitle" title="双击看今日菜价 / 外卖价">
+        <span class="dot"></span><span>我想永远陪着你 · 世态</span>
+      </div>
+      <button class="btn save-top" id="saveAssets">保存</button>
+    </header>
+
+    <nav class="fin-tabs">
+      <button class="fin-tab on" data-fin="ledger" type="button">账本</button>
+      <button class="fin-tab" data-fin="market" type="button">市场</button>
+      <button class="fin-tab" data-fin="med" type="button">医疗</button>
+    </nav>
+
+
+    <div id="finMed" hidden>
+      <div class="card">
+        <div class="card-title"><span>医疗</span><span class="pill" id="medPill">—</span></div>
+        <dl class="kv">
+          <dt>身体</dt><dd id="medStatus">—</dd>
+          <dt>说明</dt><dd id="medNote">—</dd>
+          <dt>生理期</dt><dd id="medPeriod">—</dd>
+          <dt>药品</dt><dd id="medCount">—</dd>
+        </dl>
+        <div class="meta" id="medHint">生病 / 买药 / 生理期都在这里，和账本同一套钱。</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span>药价（可买）</span></div>
+        <ul class="list" id="medList"><li class="empty">加载中…</li></ul>
+      </div>
+    </div>
+    <div id="finMarket" hidden>
+      <div class="card">
+        <div class="card-title"><span>市场</span><span class="pill" id="marketPill">—</span></div>
+        <div id="marketTabs" class="market-tabs"></div>
+        <div class="row" style="margin:6px 0">
+          <input class="market-search" id="marketSearch" placeholder="搜商品名" />
+          <button class="btn" id="marketRefresh" type="button">刷新</button>
+        </div>
+        <ul class="list" id="marketList"><li class="empty">加载中…</li></ul>
+        <div class="meta" id="marketHint">—</div>
+      </div>
+    </div>
+
+
+    <!-- 资产 / 房车 / 投资 / 每月固定：一个卡，横线分隔 -->
+    <div class="card">
+      <div class="card-title"><span>资产</span><span class="pill" id="levelPill">—</span></div>
+
+      <div class="split">
+        <div class="col">
+          <div class="sub-title">钱包</div>
+          <dl class="kv">
+            <dt>余额</dt><dd id="balance">—</dd>
+            <dt>储蓄</dt><dd id="savings">—</dd>
+            <dt>储蓄利息</dt><dd id="savingsRate">—</dd>
+            <dt>欠你</dt><dd id="owed">—</dd>
+            <dt>本月花</dt><dd id="spent">—</dd>
+            <dt>本月进</dt><dd id="earned">—</dd>
+            <dt>城市</dt><dd id="city">—</dd>
+          </dl>
+        </div>
+        <div class="col">
+          <div class="sub-title">工资 <span class="hint" id="salarySource">—</span></div>
+          <dl class="kv">
+            <dt>税前</dt><dd id="salaryGross">—</dd>
+            <dt>到手</dt><dd id="salaryNet">—</dd>
+            <dt>发薪日</dt><dd id="salaryDay">—</dd>
+            <dt>房子</dt><dd id="houseDesc">—</dd>
+            <dt>车子</dt><dd id="carDesc">—</dd>
+          </dl>
+        </div>
+      </div>
+      <div class="meta">自动：人格里有就用，没有按城市平均。</div>
+
+      <!-- 名下有房/有车：全款才勾；不勾就按工资自动租房或贷款 -->
+      <div class="ownrow">
+        <label class="check"><input type="checkbox" id="own_house" /> 名下有房（全款）</label>
+        <label class="check"><input type="checkbox" id="own_car" /> 名下有车（全款）</label>
+      </div>
+      <div class="meta">不勾就按工资和城市自动安排：够供 → 贷款（贷），不够 → 租（租）。月供和租金自动算，不用填。</div>
+
+      <div class="sep"></div>
+      <div class="sub-title">投资 <span class="hint" id="investPill">—</span></div>
+      <dl class="kv">
+        <dt>总市值</dt><dd id="investValue">—</dd>
+        <dt>浮动盈亏</dt><dd id="investPnl">—</dd>
+        <dt>今日</dt><dd id="investDay">—</dd>
+        <dt>现金</dt><dd id="investCash">—</dd>
+        <dt>储蓄</dt><dd id="investSavings">—</dd>
+        <dt>可用购买力</dt><dd id="investPower">—</dd>
+      </dl>
+      <ul class="list" id="positions"><li class="empty">还没有持仓</li></ul>
+      <div class="meta" id="investMeta">模拟盘：行情来自腾讯公开接口。买卖是她自己的事，这里只看不管；成交会记进下面的流水。没钱了她会自己开口借。</div>
+
+      <div class="sep"></div>
+      <div class="sub-title">每月固定 <span class="hint" id="fixedTotal">—</span></div>
+      <ul class="list" id="fixed"></ul>
+
+      <div class="meta" id="anxietyHint"></div>
+      <div class="hint" id="borrowHint">—</div>
+      <div class="meta" id="assetsHint">房车和工资都可以在这里改，改完点右上角「保存」。</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span>最近流水</span><span class="hint">正常交易不打日志</span></div>
+      <ul class="list" id="history"><li class="empty">加载中…</li></ul>
+    </div>
+
+    <div class="foot">反馈群 100000001</div>
+  </div>
+
+  <div id="subpage" class="sheet" hidden>
+    <div class="sheet-head">
+      <div class="brand"><span class="dot"></span><span>金融 · 今日</span></div>
+      <button class="btn" id="subClose">关闭</button>
+    </div>
+    <div class="sheet-body">
+      <div class="card">
+        <div class="card-title"><span>资产</span></div>
+        <div class="split">
+          <div class="col">
+            <div class="sub-title">钱包</div>
+            <dl class="kv">
+              <dt>余额</dt><dd id="subBalance">—</dd>
+              <dt>储蓄</dt><dd id="subSavings">—</dd>
+              <dt>欠你</dt><dd id="subOwed">—</dd>
+            </dl>
+          </div>
+          <div class="col">
+            <div class="sub-title">工资</div>
+            <dl class="kv">
+              <dt>税前</dt><dd id="subGross">—</dd>
+              <dt>到手</dt><dd id="subNet">—</dd>
+            </dl>
+          </div>
+        </div>
+        <div class="sep"></div>
+        <div class="sub-title">投资</div>
+        <dl class="kv">
+          <dt>总市值</dt><dd id="subInvestValue">—</dd>
+          <dt>浮动盈亏</dt><dd id="subInvestPnl">—</dd>
+          <dt>今日</dt><dd id="subInvestDay">—</dd>
+        </dl>
+      </div>
+      <div class="card">
+        <div class="card-title"><span>今日菜价</span><span class="hint" id="subMarketHint">—</span></div>
+        <ul class="list" id="subMarket"><li class="empty">加载中…</li></ul>
+      </div>
+      <div class="card">
+        <div class="card-title"><span>今日外卖价</span><span class="hint" id="subReadyHint">—</span></div>
+        <ul class="list" id="subReady"><li class="empty">加载中…</li></ul>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* AstrBot 把 bridge-sdk.js 注入在 app.js **之后**（实测 56 行是本文件、57 行才是 SDK），
+   所以脚本刚执行时 window.AstrBotPluginView 还不存在——只抓一次就会永远抓不到，
+   面板会一直「读取失败」。这里每次调用都重新找，并给启动加一个等待桥接的重试。 */
+let bridge = null;
+
+/* AstrBot 的官方桥接有时候不注入（或者注入晚于本脚本），
+   这时用 postMessage 自建一条同样的通道——跟终端面板里的 createInlineBridge 一致。 */
+function createInlineBridge() {
+  if (!window.parent || window.parent === window) return null;
+  const pending = new Map();
+  let counter = 0;
+  window.addEventListener("message", (event) => {
+    if (event.source !== window.parent) return;
+    const message = event.data;
+    if (!message || message.channel !== "astrbot-plugin-page") return;
+    if (message.kind !== "response") return;
+    const item = pending.get(message.requestId);
+    if (!item) return;
+    pending.delete(message.requestId);
+    if (message.ok) item.resolve(message.data);
+    else item.reject(new Error(message.error || "插件桥接请求失败"));
+  });
+  function request(action, payload) {
+    return new Promise((resolve, reject) => {
+      const requestId = "plugin_req_" + (++counter);
+      const timer = setTimeout(() => {
+        if (pending.delete(requestId)) reject(new Error("插件桥接超时"));
+      }, 25000);
+      pending.set(requestId, {
+        resolve: (value) => { clearTimeout(timer); resolve(value); },
+        reject: (error) => { clearTimeout(timer); reject(error); },
+      });
+      try {
+        window.parent.postMessage({
+          channel: "astrbot-plugin-page",
+          kind: "request",
+          requestId,
+          action,
+          ...(payload || {}),
+        }, "*");
+      } catch (error) {
+        clearTimeout(timer);
+        pending.delete(requestId);
+        reject(error);
+      }
+    });
+  }
+  try { window.parent.postMessage({ channel: "astrbot-plugin-page", kind: "ready" }, "*"); } catch (error) {}
+  return {
+    apiGet: (endpoint, params) => request("api:get", { endpoint, params }),
+    apiPost: (endpoint, body) => request("api:post", { endpoint, body }),
+  };
+}
+
+function resolveBridge() {
+  if (bridge) return bridge;
+  const candidates = [];
+  try { candidates.push(window.AstrBotPluginView, window.AstrBotPluginPage); } catch (err) {}
+  try { candidates.push(window.parent.AstrBotPluginView, window.parent.AstrBotPluginPage); } catch (err) {}
+  try { candidates.push(window.top.AstrBotPluginView, window.top.AstrBotPluginPage); } catch (err) {}
+  bridge = candidates.find((item) => item && typeof item.apiGet === "function")
+    || createInlineBridge();
+  return bridge;
+}
+function waitForBridge(fn, tries) {
+  const left = (typeof tries === "number") ? tries : 50;   // 默认最多等 6 秒
+  if (resolveBridge()) { fn(); return; }
+  if (left > 0) setTimeout(() => waitForBridge(fn, left - 1), 120);
+}
+const $ = (id) => document.getElementById(id);
+
+function unwrap(res) {
+  if (res == null) return null;
+  let v = res;
+  // 桥接会剥一层；有些版本还会把 {code,data} 原样给过来，最多剥两层
+  for (let i = 0; i < 2; i += 1) {
+    if (v && typeof v === "object" && "data" in v
+        && (v.code === 0 || v.code === undefined) && !("balance" in v)
+        && !("positions" in v) && !("items" in v) && !("link" in v)) {
+      v = v.data;
+      continue;
+    }
+    break;
+  }
+  return v;
+}
+
+let lastError = "";
+async function get(path) {
+  const b = resolveBridge();
+  if (!b) { lastError = "找不到页面桥接（请从插件详情→查看页面重新打开）"; return null; }
+  try {
+    const raw = await b.apiGet(path);
+    const v = unwrap(raw);
+    if (!v) lastError = path + " 返回为空";
+    return v;
+  } catch (e) { lastError = path + " 请求失败：" + (e && e.message ? e.message : e); return null; }
+}
+async function post(path, body) {
+  const b = resolveBridge();
+  if (!b) { lastError = "找不到页面桥接"; return null; }
+  try { return unwrap(await b.apiPost(path, body || {})); }
+  catch (e) { lastError = path + " 请求失败：" + (e && e.message ? e.message : e); return null; }
+}
+
+function money(v) {
+  const n = Number(v || 0);
+  return "¥" + n.toFixed(2);
+}
+
+const BANKRUPT_TEXT = {
+  losing: "她最近亏得有点多，嘴上还硬，心里已经开始发慌了。",
+  ruined: "她已经亏到快破产了，会来找你哭「老公我好像有点破产了」。",
+  broke: "她卡里基本没钱了，会来找你哭「老公我好像有点破产了」。",
+};
+
+async function loadStatus() {
+  const d = await get("status");
+  if (!d || typeof d !== "object") {
+    // 把「哪一步失败」写出来，并给个重试入口，别只留一个「读取失败」
+    ["balance", "savings", "investValue", "investCash"].forEach((id) => {
+      const el = $(id); if (el) el.textContent = "读取失败";
+    });
+    const tip = $("investMeta");
+    if (tip) {
+      tip.innerHTML = '金融数据读取失败：' + (lastError || "桥接没返回 status")
+        + '（<span style="text-decoration:underline;cursor:pointer" id="retryStatus">点这里重试</span>）';
+      const btn = $("retryStatus");
+      if (btn) btn.onclick = () => loadStatus();
+    }
+    return;
+  }
+  if (d.link) amoLinkRender(d.link);
+  $("balance").textContent = money(d.balance);
+  $("savings").textContent = money(d.savings);
+  $("owed").textContent = d.owed_to_user ? money(d.owed_to_user) : "无";
+  $("savingsRate").textContent = d.savings_rate ? ("年化 " + d.savings_rate + "%") : "不计息";
+  $("spent").textContent = money(d.month_spent);
+  $("earned").textContent = money(d.month_income);
+  $("city").textContent = (d.city || "未配置") + " · " + d.city_level;
+  const pay = d.salary || {};
+  $("salaryGross").textContent = money(pay.gross);
+  $("salaryNet").textContent = money(pay.net);
+  $("salaryDay").textContent = pay.pay_day ? ("每月 " + pay.pay_day + " 号") : "—";
+  $("salarySource").textContent = pay.source || "—";
+  const houseKind = String(d.house_kind || "");
+  const kindText = { own: "全款房", loan: "贷款房", rent: "租房" }[houseKind] || (d.own_house ? "全款房" : "租房");
+  $("levelPill").textContent = kindText;
+  const houseDesc = $("houseDesc");
+  if (houseDesc) houseDesc.textContent = d.house_desc || "—";
+  const carDesc = $("carDesc");
+  if (carDesc) carDesc.textContent = d.car_desc || "—";
+  $("fixedTotal").textContent = money(d.fixed_total) + "/月";
+  const a = Number(d.anxiety || 0);
+  $("anxietyHint").textContent = a >= 0.7 ? "她现在有点为钱发愁（" + a.toFixed(2) + "）"
+    : a >= 0.3 ? "还算稳（" + a.toFixed(2) + "）" : "没什么压力";
+
+  const bor = d.borrow || {};
+  if ($("borrowHint")) {
+    const owed = Number(bor.owed || 0);
+    $("borrowHint").textContent = owed > 0
+      ? ("她欠你 " + money(owed) + "；今天转账还可借 " + money(bor.transfer_left || 0) +
+         "，红包剩 " + money(bor.red_left || 0))
+      : ("私聊里发「[转账]500 元」或「[红包]200 元」（可带 USD / HKD）才算借款；转账每天最多一万，红包单个最多 200、累计一万。");
+  }
+
+  const inv = d.invest || {};
+  const pnl = Number(inv.total_pnl || 0);
+  const dayPnl = Number(inv.day_pnl || 0);
+  $("investValue").textContent = money(inv.total_value);
+  $("investPnl").textContent = (pnl >= 0 ? "+" : "") + money(pnl);
+  $("investDay").textContent = (dayPnl >= 0 ? "+" : "") + money(dayPnl);
+  $("investCash").textContent = money(inv.cash);
+  if ($("investSavings")) $("investSavings").textContent = money(inv.savings);
+  if ($("investPower")) $("investPower").textContent = money(inv.buying_power);
+  $("investPill").textContent = (inv.aggressive ? "FX 战士 · " : "") + (inv.count || 0) + " 只持仓";
+  const CUR = { CNY: "¥", USD: "$", HKD: "HK$" };
+  $("positions").innerHTML = (inv.positions || []).map((i) => {
+    const cur = CUR[i.currency] || "¥";
+    const native = (i.currency && i.currency !== "CNY")
+      ? " · " + cur + Number(i.last || 0).toFixed(2)
+      : "";
+    return '<li><span class="p">' + (i.name || i.symbol) + " · " + i.qty + " 股" + native + "</span>" +
+      '<span class="s">' + money(i.market_value) + "（" +
+      (i.pnl >= 0 ? "+" : "") + i.pnl_pct.toFixed(1) + "%）</span></li>";
+  }).join("") || '<li class="empty">还没有持仓，等她自己去买</li>';
+
+  const bk = inv.bankrupt || {};
+  const bkText = BANKRUPT_TEXT[bk.level] || "";
+  $("investMeta").textContent = (bkText ? bkText + " " : "") +
+    "模拟盘：A 股行情来自同花顺，港美股与兜底走腾讯；期货走新浪。" +
+    (inv.aggressive ? ("她现在开 " + (inv.leverage || 1) + " 倍杠杆、单只最多压 " +
+      Number(inv.max_weight || 1).toFixed(2) + " 倍身家、最多 " + (inv.max_positions || 10) + " 只。" +
+      (Number(inv.margin_debt || 0) > 0 ? " 保证金借款 " + money(inv.margin_debt) + "。" : "")) : "");
+
+  $("fixed").innerHTML = (d.fixed || []).map((i) =>
+    '<li><span class="p">' + i.name + '</span><span class="s">' + money(i.amount) + "</span></li>"
+  ).join("") || '<li class="empty">无</li>';
+
+  $("own_house").checked = !!d.own_house;
+  $("own_car").checked = !!d.own_car;
+}
+
+async function loadHistory() {
+  const d = await get("history");
+  const items = (d && d.items) || [];
+  const list = $("history");
+  if (!items.length) { list.innerHTML = '<li class="empty">还没有账</li>'; return; }
+  list.innerHTML = items.slice().reverse().slice(0, 40).map((it) => {
+    const neg = ["expense", "fixed", "repay", "stock_buy"].includes(it.kind);
+    const cls = it.kind === "expense_failed" ? "bad" : (neg ? "" : "ok");
+    const sign = neg ? "-" : "+";
+    return '<li><span class="t">' + (it.time || "") + '</span><span class="p">' +
+      (it.reason || it.kind) + '</span><span class="s ' + cls + '">' +
+      sign + money(it.amount).slice(1) + "</span></li>";
+  }).join("");
+}
+
+async function openSubpage() {
+  $("subpage").hidden = false;
+  const d = await get("status");
+  if (d) {
+    $("subBalance").textContent = money(d.balance);
+    $("subSavings").textContent = money(d.savings);
+    $("subOwed").textContent = d.owed_to_user ? money(d.owed_to_user) : "无";
+    const pay = d.salary || {};
+    $("subGross").textContent = money(pay.gross);
+    $("subNet").textContent = money(pay.net);
+  }
+  if (d) {
+    const inv = d.invest || {};
+    const pnl = Number(inv.total_pnl || 0);
+    const day = Number(inv.day_pnl || 0);
+    $("subInvestValue").textContent = money(inv.total_value);
+    $("subInvestPnl").textContent = (pnl >= 0 ? "+" : "") + money(pnl);
+    $("subInvestDay").textContent = (day >= 0 ? "+" : "") + money(day);
+  }
+  const m = await get("market");
+  const prices = (m && m.prices) || {};
+  const names = Object.keys(prices).sort();
+  $("subMarket").innerHTML = names.length ? names.map((name) =>
+    '<li><span class="p">' + name + '</span><span class="s">¥' +
+    Number(prices[name] || 0).toFixed(2) + '</span></li>'
+  ).join("") : '<li class="empty">菜价读取失败</li>';
+  $("subMarketHint").textContent = m
+    ? ((m.date || "") + (m.weather ? " · " + m.weather : "")) : "读取失败";
+
+  const f = await get("food/quote");
+  const ready = (f && f.ready) || [];
+  $("subReady").innerHTML = ready.length ? ready.map((it) =>
+    '<li><span class="p">' + (it.name || "") + " · 饱食 " + (it.satiety || 0) + '</span>' +
+    '<span class="s">¥' + Number(it.price || 0).toFixed(2) + '</span></li>'
+  ).join("") : '<li class="empty">外卖价读取失败</li>';
+  $("subReadyHint").textContent = f
+    ? ((f.city || "") + (f.level ? " · " + f.level : "")) : "读取失败";
+}
+
+$("brandTitle").addEventListener("dblclick", openSubpage);
+let _lastBrandTap = 0;
+$("brandTitle").addEventListener("touchend", (ev) => {
+  const now = Date.now();
+  if (now - _lastBrandTap < 360) {
+    ev.preventDefault();
+    _lastBrandTap = 0;
+    openSubpage();
+    return;
+  }
+  _lastBrandTap = now;
+});
+$("subClose").addEventListener("click", () => { $("subpage").hidden = true; });
+
+$("saveAssets").addEventListener("click", async () => {
+  const body = {
+    own_house: $("own_house").checked,
+    own_car: $("own_car").checked,
+  };
+  const res = await post("assets", body);
+  $("assetsHint").textContent = res ? "已保存。" : "保存失败。";
+  loadStatus();
+});
+
+/* ---- 顶栏：市场 / 账本 ---- */
+const MARKET_TABS = [
+  ["groceries", "菜市场"], ["takeout", "外卖"], ["dining", "餐饮"], ["drugs", "药品"],
+  ["outfits", "服装"], ["jewelry", "首饰"], ["cosmetics", "美妆"],
+  ["hotel", "酒店"], ["ticket", "车票"], ["attraction", "景区"], ["subscription", "会员"]
+];
+let marketItems = {};
+let marketKind = "groceries";
+let finTab = "market";
+
+/* ---- 医疗（并入世态） ---- */
+async function loadMed() {
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  try {
+    const st = await get("med/status");
+    if (st) {
+      const pill = document.getElementById("medPill");
+      if (pill) pill.textContent = st.healthy === false ? "生病中" : "健康";
+      set("medStatus", st.status || "健康");
+      set("medNote", st.note || "—");
+      set("medCount", (st.medicine_count || 0) + " 种可买");
+    }
+  } catch (e) {}
+  try {
+    const pd = await get("med/period");
+    if (pd) set("medPeriod", (pd.phase || "—") + " 第 " + (pd.day || 0) + " 天");
+  } catch (e) {}
+  try {
+    const md = await get("med/medicines");
+    const list = document.getElementById("medList");
+    if (list && md) {
+      const items = md.items || md || [];
+      list.textContent = "";
+      if (!items.length) {
+        const li = document.createElement("li");
+        li.className = "empty";
+        li.textContent = "没有可买的药";
+        list.appendChild(li);
+      } else {
+        items.slice(0, 120).forEach((row) => {
+          const li = document.createElement("li");
+          const name = document.createElement("span");
+          name.className = "p";
+          name.textContent = row.name || row.key || "";
+          const price = document.createElement("span");
+          price.className = "s";
+          price.textContent = "¥" + Number(row.price || 0).toFixed(2);
+          li.appendChild(name);
+          li.appendChild(price);
+          list.appendChild(li);
+        });
+      }
+    }
+  } catch (e) {}
+}
+
+// 账本原来是直接铺在 .wrap 里的卡片：把它们收进 #finLedger，
+// 这样三个页签互斥，市场下面不会再跟着资产/投资/每月固定。
+function wrapLedger() {
+  if (document.getElementById("finLedger")) return;
+  const wrap = document.querySelector(".wrap");
+  if (!wrap) return;
+  const ledger = document.createElement("div");
+  ledger.id = "finLedger";
+  const cards = Array.prototype.slice.call(wrap.querySelectorAll(":scope > .card"));
+  if (!cards.length) return;
+  cards.forEach((card) => ledger.appendChild(card));
+  const market = document.getElementById("finMarket");
+  if (market && market.parentNode === wrap) wrap.insertBefore(ledger, market);
+  else wrap.appendChild(ledger);
+}
+
+function setFinTab(name) {
+  finTab = name || "ledger";
+  wrapLedger();
+  document.querySelectorAll(".fin-tab").forEach((b) => {
+    b.classList.toggle("on", b.dataset.fin === finTab);
+  });
+  const ledger = document.getElementById("finLedger");
+  const market = document.getElementById("finMarket");
+  const med = document.getElementById("finMed");
+  if (ledger) ledger.hidden = finTab !== "ledger";
+  if (market) market.hidden = finTab !== "market";
+  if (med) med.hidden = finTab !== "med";
+  if (finTab === "market") loadMarket(false);
+  if (finTab === "med") loadMed();
+}
+
+function renderMarketTabs() {
+  const box = document.getElementById("marketTabs");
+  if (!box) return;
+  box.textContent = "";
+  MARKET_TABS.forEach((pair) => {
+    const key = pair[0];
+    const chip = document.createElement("button");
+    chip.className = "market-tab" + (key === marketKind ? " on" : "");
+    chip.type = "button";
+    const rows = marketItems[key] || [];
+    chip.textContent = pair[1] + (rows.length ? " " + rows.length : "");
+    chip.addEventListener("click", () => { marketKind = key; renderMarketTabs(); renderMarketList(); });
+    box.appendChild(chip);
+  });
+}
+
+function renderMarketList() {
+  const list = document.getElementById("marketList");
+  if (!list) return;
+  const word = String((document.getElementById("marketSearch") || {}).value || "").trim();
+  let rows = marketItems[marketKind] || [];
+  if (word) rows = rows.filter((r) => String(r.name || "").indexOf(word) >= 0);
+  const all = rows.length;
+  rows = rows.slice(0, 120);
+  list.textContent = "";
+  if (!rows.length) {
+    const li = document.createElement("li");
+    li.className = "empty";
+    li.textContent = "这类暂时没有货";
+    list.appendChild(li);
+    return;
+  }
+  rows.forEach((row) => {
+    const li = document.createElement("li");
+    const name = document.createElement("span");
+    name.className = "p";
+    name.textContent = row.name || "";
+    const price = document.createElement("span");
+    price.className = "s";
+    const n = Number(row.price || 0);
+    price.textContent = (n ? "¥" + n.toFixed(2) : "—") + (row.unit ? "/" + row.unit : "");
+    li.appendChild(name);
+    li.appendChild(price);
+    list.appendChild(li);
+  });
+  const hint = document.getElementById("marketHint");
+  if (hint) hint.textContent = "这一类共 " + all + " 条，最多显示 120 条";
+}
+
+async function loadMarket(force) {
+  if (!force && Object.keys(marketItems).length) {
+    renderMarketTabs();
+    renderMarketList();
+    return;
+  }
+  const data = await get("market/nexus");
+  if (!data || !data.items) {
+    const list = document.getElementById("marketList");
+    if (list) list.innerHTML = '<li class="empty">市场数据读取失败</li>';
+    return;
+  }
+  marketItems = data.items || {};
+  let total = 0;
+  Object.keys(marketItems).forEach((k) => { total += (marketItems[k] || []).length; });
+  const pill = document.getElementById("marketPill");
+  if (pill) pill.textContent = (data.city || "") + " · " + total + " 条";
+  renderMarketTabs();
+  renderMarketList();
+}
+
+document.querySelectorAll(".fin-tab").forEach((b) => {
+  b.addEventListener("click", () => setFinTab(b.dataset.fin));
+});
+(function () {
+  const search = document.getElementById("marketSearch");
+  if (search) search.addEventListener("input", renderMarketList);
+  const refresh = document.getElementById("marketRefresh");
+  if (refresh) refresh.addEventListener("click", () => loadMarket(true));
+})();
+
+waitForBridge(() => {
+  loadStatus();
+  loadHistory();
+  setFinTab("ledger");
+});
+setInterval(loadStatus, 30000);
+
+/* ---- 连接状态：我这个挂载插件自己有没有连上终端/记忆库 ---- */
+function amoLinkDot(ok) { return '<span style="color:' + (ok ? "#2e9e5b" : "#d83b3b") + '">\u25cf</span>'; }
+function amoLinkRender(d) {
+  const box = document.getElementById("linkbar");
+  if (!box) return;
+  box.onclick = null;
+  if (!d) {
+    // 失败要能自己说明白、能点重试，别只留一句「读不到」
+    box.innerHTML = '连接状态：读取失败（health 接口没响应，<span style="text-decoration:underline;cursor:pointer">点这里重试</span>）';
+    box.onclick = () => amoLinkLoad();
+    return;
+  }
+  const hb = (typeof d.last_heartbeat === "number" && d.last_heartbeat >= 0)
+    ? ("心跳 " + d.last_heartbeat + " 秒前") : "从未连上过";
+  box.innerHTML = [
+    amoLinkDot(d.terminal_connected) + " 终端" + (d.terminal_connected ? " v" + (d.terminal_version || "?") : " 未连接"),
+    amoLinkDot(d.data_connected) + " 记忆库" + (d.data_connected ? " v" + (d.data_version || "?") : " 未连接"),
+    "bot_id " + (d.bot_id || "\u2014"),
+    hb
+  ].join(' <span style="opacity:.35">\uff5c</span> ');
+  box.title = d.error || "";
+}
+
+async function amoLinkFetch() {
+  try { return await get("health"); } catch (e) { return null; }
+}
+async function amoLinkLoad() {
+  // 面板脚本比 AstrBot 的桥接先跑，头几次拿不到数据是正常的：
+  // 等桥接就绪再重试，别一上来就把「读不到」画给人看。
+  const box = document.getElementById("linkbar");
+  if (box && /检查中|读取失败/.test(box.textContent || "")) box.textContent = "连接状态：读取中…";
+  for (let i = 0; i < 20; i += 1) {
+    const d = await amoLinkFetch();
+    if (d) { amoLinkRender(d); return; }
+    await new Promise((resolve) => setTimeout(resolve, 400));
+  }
+  amoLinkRender(null);
+}
+
+amoLinkLoad();
+setInterval(amoLinkLoad, 30000);
+
+    </script>
+</body>
+</html>
