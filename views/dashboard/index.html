@@ -360,42 +360,10 @@ textarea:focus { outline: none; border-color: var(--pink); }
 
     <nav class="fin-tabs">
       <button class="fin-tab on" data-fin="ledger" type="button">账本</button>
-      <button class="fin-tab" data-fin="market" type="button">市场</button>
-      <button class="fin-tab" data-fin="med" type="button">医疗</button>
     </nav>
 
 
-    <div id="finMed" hidden>
-      <div class="card">
-        <div class="card-title"><span>医疗</span><span class="pill" id="medPill">—</span></div>
-        <dl class="kv">
-          <dt>身体</dt><dd id="medStatus">—</dd>
-          <dt>说明</dt><dd id="medNote">—</dd>
-          <dt>生理期</dt><dd id="medPeriod">—</dd>
-          <dt>药品</dt><dd id="medCount">—</dd>
-        </dl>
-        <div class="meta" id="medHint">生病 / 买药 / 生理期都在这里，和账本同一套钱。</div>
-      </div>
-      <div class="card">
-        <div class="card-title"><span>药价（可买）</span></div>
-        <ul class="list" id="medList"><li class="empty">加载中…</li></ul>
-      </div>
-    </div>
-    <div id="finMarket" hidden>
-      <div class="card">
-        <div class="card-title"><span>市场</span><span class="pill" id="marketPill">—</span></div>
-        <div id="marketTabs" class="market-tabs"></div>
-        <div class="row" style="margin:6px 0">
-          <input class="market-search" id="marketSearch" placeholder="搜商品名" />
-          <button class="btn" id="marketRefresh" type="button">刷新</button>
-        </div>
-        <ul class="list" id="marketList"><li class="empty">加载中…</li></ul>
-        <div class="meta" id="marketHint">—</div>
-      </div>
-    </div>
-
-
-    <!-- 资产 / 房车 / 投资 / 每月固定：一个卡，横线分隔 -->
+            <!-- 资产 / 房车 / 投资 / 每月固定：一个卡，横线分隔 -->
     <div class="card">
       <div class="card-title"><span>资产</span><span class="pill" id="levelPill">—</span></div>
 
