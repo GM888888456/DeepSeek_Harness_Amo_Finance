@@ -252,12 +252,131 @@ OTHER_OUTFITS = (
 )
 
 
+# ---------- 整套服装（2026-11-21 她要的：市场只卖整套，不再卖单件） ----------
+#: (整套名, 风格标签, ((件名, 槽位), ...))；件名必须和上面的单品清单同名，
+#: 这样买回来写进衣柜时能按「套名｜件名」归组，compose_set 才认得出一整套。
+OUTFIT_SETS = (
+    ("汉服·唐制齐胸襦裙（整套）", "汉服·唐制",
+     (("唐制齐胸上襦", "top"), ("唐制间色裙", "bottom"),
+      ("唐制披帛", "accessory"), ("唐制绣花翘头履", "shoes"))),
+    ("汉服·唐制坦领齐腰（整套）", "汉服·唐制",
+     (("唐制坦领半臂", "top"), ("唐制间色裙", "bottom"),
+      ("唐制披帛", "accessory"), ("唐制绣花翘头履", "shoes"))),
+    ("汉服·宋制抹胸长裙（整套）", "汉服·宋制",
+     (("宋制抹胸", "top"), ("宋制百迭裙", "bottom"),
+      ("宋制珍珠发夹", "accessory"), ("宋制素缎绣鞋", "shoes"))),
+    ("汉服·宋制对襟襦裙（整套）", "汉服·宋制",
+     (("宋制对襟衫", "top"), ("宋制三裥裙", "bottom"),
+      ("宋制珍珠发夹", "accessory"), ("宋制素缎绣鞋", "shoes"))),
+    ("汉服·宋制褙子长裙（整套）", "汉服·宋制",
+     (("宋制素色褙子", "top"), ("宋制宋裤", "bottom"),
+      ("宋制珍珠发夹", "accessory"), ("宋制素缎绣鞋", "shoes"))),
+    ("汉服·明制马面裙套装（整套）", "汉服·明制",
+     (("明制立领斜襟袄", "top"), ("明制织金马面裙", "bottom"),
+      ("明制珍珠云肩", "accessory"), ("明制绣花弓鞋", "shoes"))),
+    ("汉服·明制立领长衫（整套）", "汉服·明制",
+     (("明制立领对襟长衫", "top"), ("明制素面马面裙", "bottom"),
+      ("明制珍珠云肩", "accessory"), ("明制皂靴", "shoes"))),
+    ("汉服·明制比甲月华裙（整套）", "汉服·明制",
+     (("明制比甲", "top"), ("明制月华裙", "bottom"),
+      ("明制珍珠云肩", "accessory"), ("明制绣花弓鞋", "shoes"))),
+    ("汉服·魏晋大袖衫裙（整套）", "汉服·晋制",
+     (("魏晋大袖衫", "top"), ("晋制褶裙", "bottom"),
+      ("魏晋白玉簪", "accessory"), ("晋制软底布履", "shoes"))),
+    ("汉服·汉制曲裾深衣（整套）", "汉服·汉制",
+     (("汉制交领中衣", "top"), ("汉制直裾深衣", "dress"),
+      ("汉制组玉佩", "accessory"), ("汉制翘头履", "shoes"))),
+    ("百褶·白色水手服（整套）", "JK·水手服",
+     (("白色水手服", "jk_shirt"), ("藏青格裙", "jk_skirt"),
+      ("白色短袜", "socks"), ("黑色乐福鞋", "shoes"), ("学院领结", "accessory"))),
+    ("百褶·浅蓝水手服（整套）", "JK·水手服",
+     (("浅蓝水手服", "jk_shirt"), ("浅蓝格裙", "jk_skirt"),
+      ("白色中筒袜", "socks"), ("米色制服鞋", "shoes"), ("领绳", "accessory"))),
+    ("百褶·藏青水手服（整套）", "JK·水手服",
+     (("藏青水手服", "jk_shirt"), ("藏青格裙", "jk_skirt"),
+      ("白色短袜", "socks"), ("白色系带帆布鞋", "shoes"), ("格纹领带", "accessory"))),
+    ("百褶·粉格水手服（整套）", "JK·水手服",
+     (("粉格水手服", "jk_shirt"), ("樱粉格裙", "jk_skirt"),
+      ("棉质中筒袜", "socks"), ("黑色玛丽珍", "shoes"), ("蝴蝶结领结", "accessory"))),
+    ("百褶·黑红水手服（整套）", "JK·水手服",
+     (("黑红水手服", "jk_shirt"), ("黑红格裙", "jk_skirt"),
+      ("黑色短袜", "socks"), ("黑色小皮鞋", "shoes"), ("蝴蝶结发圈", "accessory"))),
+    ("百褶·衬衫灰格（整套）", "JK·衬衫",
+     (("白色长袖衬衫", "jk_shirt"), ("灰格百褶裙", "jk_skirt"),
+      ("白色短袜", "socks"), ("棕色乐福鞋", "shoes"), ("蝴蝶结领结", "accessory"))),
+    ("百褶·奶白衬衫深绿格（整套）", "JK·衬衫",
+     (("奶白短袖衬衣", "jk_shirt"), ("深绿格裙", "jk_skirt"),
+      ("米色短袜", "socks"), ("棕色小皮鞋", "shoes"), ("白色发带", "accessory"))),
+    ("百褶·浅蓝衬衫灰蓝格（整套）", "JK·衬衫",
+     (("浅蓝JK衬衫", "jk_shirt"), ("灰蓝格裙", "jk_skirt"),
+      ("白底黑边袜", "socks"), ("白色低帮运动鞋", "shoes"), ("领绳", "accessory"))),
+    ("日常·白衬衫牛仔裤（整套）", "日常",
+     (("白色衬衫", "top"), ("浅蓝牛仔裤", "bottom"),
+      ("白色帆布鞋", "shoes"), ("帆布托特包", "accessory"))),
+    ("日常·针织阔腿裤（整套）", "日常",
+     (("米色针织衫", "top"), ("米白阔腿裤", "bottom"),
+      ("米色乐福鞋", "shoes"), ("细框眼镜", "accessory"))),
+    ("日常·卫衣运动裤（整套）", "日常",
+     (("浅灰卫衣", "top"), ("运动裤", "bottom"),
+      ("白色运动鞋", "shoes"), ("黑色鸭舌帽", "accessory"))),
+    ("日常·毛衣直筒裤（整套）", "日常",
+     (("燕麦色毛衣", "top"), ("黑色直筒裤", "bottom"),
+      ("黑色短靴", "shoes"), ("格纹围巾", "accessory"))),
+    ("日常·西装成套（整套）", "日常",
+     (("黑色西装外套", "top"), ("灰色西装裤", "bottom"),
+      ("黑色高跟鞋", "shoes"), ("黑色小挎包", "accessory"))),
+    ("日常·衬衫半裙（整套）", "日常",
+     (("浅蓝衬衫", "top"), ("深色半裙", "bottom"),
+      ("米色平底鞋", "shoes"), ("米色贝雷帽", "accessory"))),
+    ("日常·碎花长裙（整套）", "日常",
+     (("碎花长裙", "dress"), ("米色平底鞋", "shoes"), ("帆布托特包", "accessory"))),
+    ("日常·针织连衣裙（整套）", "日常",
+     (("奶茶色针织连衣裙", "dress"), ("白色运动鞋", "shoes"), ("细框眼镜", "accessory"))),
+    ("寝衣·月纱（整套）", "寝衣",
+     (("月白缎面抹胸", "top"), ("月白薄纱长裙", "bottom"), ("白纱披帛", "accessory"))),
+    ("寝衣·樱雾（整套）", "寝衣",
+     (("樱粉纱质抹胸", "top"), ("米白薄纱长裙", "bottom"), ("樱粉薄纱披帛", "accessory"))),
+    ("寝衣·藕烟（整套）", "寝衣",
+     (("藕荷缎面抹胸", "top"), ("藕荷薄纱长裙", "bottom"), ("藕荷薄纱披帛", "accessory"))),
+    ("寝衣·雪绡（整套）", "寝衣",
+     (("白色绣兰抹胸", "top"), ("白色薄纱长裙", "bottom"), ("白玉簪", "accessory"))),
+)
+
+#: 整套价：按类别给定区间（她买的是一整套，不再按单品算钱）
+SET_PRICE_RANGE = {
+    "汉服": (399.0, 899.0),
+    "JK": (259.0, 459.0),
+    "日常": (199.0, 499.0),
+    "寝衣": (299.0, 399.0),
+}
+
+
+def _set_price(style: str, index: int) -> float:
+    style = str(style or "")
+    for key, (low, high) in SET_PRICE_RANGE.items():
+        if key in style:
+            steps = 5
+            return round(low + (high - low) * ((index * 3) % steps) / (steps - 1), 1)
+    return 299.0
+
+
 def build_outfits() -> list[dict]:
-    """服装目录：汉服 50 / JK 50 / 其他 50（用户要的比例，共 150 件）。"""
+    """服装目录：**只卖整套**（2026-11-21 她的要求）。
+
+    以前卖单件，她买一件上衣进衣柜就成了孤件，`compose_set` 认不出套名，
+    日程里配装直接乱掉（她的原话「买了就炸了」）。现在一条商品就是一整套，
+    `pieces` 里带齐每个槽位，买回来按「套名｜件名」展开写进衣柜。
+    """
     rows = []
-    for group in (HANFU_OUTFITS, JK_OUTFITS, OTHER_OUTFITS):
-        for name, slot, style in group:
-            rows.append({"name": name, "slot": slot, "style": style, "kind": "服装"})
+    for index, (name, style, pieces) in enumerate(OUTFIT_SETS):
+        rows.append({
+            "name": name,
+            "slot": "set",
+            "style": style,
+            "kind": "服装",
+            "price": _set_price(style, index),
+            "pieces": [[piece, slot] for piece, slot in pieces],
+        })
     return rows
 
 
@@ -389,6 +508,7 @@ def _extend_outfits() -> list[dict]:
     for index, row in enumerate(rows):
         if not row.get("price"):
             row["price"] = _outfit_price(row.get("slot"), index)
+        row.setdefault("kind", "服装")
     return rows
 
 
