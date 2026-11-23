@@ -1,10 +1,4 @@
 {
-  "enable": {
-    "type": "bool",
-    "description": "启用账本",
-    "default": true,
-    "hint": "关掉后终端不会扣钱，也不会记录任何流水。"
-  },
   "salary": {
     "type": "float",
     "description": "月薪（税前，0 = 自动）",
@@ -88,18 +82,6 @@
     "description": "物价表（JSON）",
     "default": "",
     "hint": "留空用内置价格。可覆盖单项，例如 {\"奶茶\": 22, \"外卖\": 40}。"
-  },
-  "daily_food_budget": {
-    "type": "float",
-    "description": "每日餐饮预算",
-    "default": 0,
-    "hint": "0 = 按城市档位自动（一线 110 / 新一线 90 / 二线 75）。"
-  },
-  "anxiety_threshold": {
-    "type": "float",
-    "description": "焦虑阈值",
-    "default": 0.5,
-    "hint": "余额撑不住固定支出的程度超过这个值，她会开始焦虑。0 = 总有安全感，1 = 只有快花光才焦虑。"
   },
   "invest_aggressive": {
     "type": "bool",
