@@ -370,8 +370,11 @@ def plan_assets(ledger: Ledger, city: str = "", salary: float = 0.0,
         ledger.house_rent = round(rent_base, 2)
         suffix = "租"
     if persona_house:
+        # 2026-11-26（用户口径）：她的是整座庄园（自有），不该被拼成
+        # 「云顶山庄·1503·三室两厅·自」这种租房描述。自有房只留名字 + 自。
+        owned_house = (suffix == "自") or ("庄园" in persona_house) or ("山庄" in persona_house)
         # 人格只写了小区名的话，再补门牌/户型，别只剩一个「南明区·小窝·自」
-        if "室" in persona_house or persona_house.count("·") >= 2:
+        if owned_house or "室" in persona_house or persona_house.count("·") >= 2:
             ledger.house_desc = "%s·%s" % (persona_house, suffix)
         else:
             ledger.house_desc = "%s·%s·%s·%s" % (persona_house, room, layout, suffix)

@@ -2848,7 +2848,7 @@ class AmoFinancePlugin(Star):
                 "own_car_full": bool(self._state.get("own_car_full")),
                 "own_house_full": bool(self._state.get("own_house_full")),
                 "car_desc": str(self._state.get("persona_car") or "宝马A8·贵A·00008"),
-                "house_desc": str(self._state.get("persona_house") or "观山湖三居室"),
+                "house_desc": str(self._state.get("persona_house") or "云顶山庄·沈家庄园"),
             },
             "state": self._state,
             "history": list(self._history),
@@ -3093,7 +3093,7 @@ class AmoFinancePlugin(Star):
                                       "全款" if (_led.get("own_car_full") or _state.get("persona_car")) else "按揭"),
                  "category": "私人", "source": "bank"},
                 {"name": "房子", "price": 0, "unit": "",
-                 "note": "%s（%s）" % (_led.get("house_desc") or "观山湖三居室",
+                 "note": "%s（%s）" % (_led.get("house_desc") or "云顶山庄·沈家庄园",
                                       "全款" if (_led.get("own_house_full") or _state.get("persona_house")) else "按揭"),
                  "category": "私人", "source": "bank"},
             ]
