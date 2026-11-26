@@ -64,7 +64,7 @@ HOTEL_AREAS = {"市中心": 1.12, "火车站": 0.94, "机场路": 1.0,
                "老城区": 0.92, "新区": 1.05, "景区旁": 1.18}
 PAGE_SIZE = 120
 #: 数据结构/生成规则变了就 +1：旧缓存会被丢弃重建。
-DATA_VERSION = 3
+DATA_VERSION = 5
 
 #: 数字订阅：真实月费的量级（按人民币，不含首月优惠）。
 SUBSCRIPTIONS = (
@@ -453,18 +453,35 @@ def attraction_options(city: str = "", limit: int = PAGE_SIZE) -> list[dict]:
 
 
 SECTIONS = (
-    {"id": "food", "title": "餐饮与生鲜", "kinds": ("groceries", "takeout", "dining")},
-    {"id": "medical", "title": "医疗与健康", "kinds": ("drugs",)},
-    {"id": "wardrobe", "title": "服饰与美妆", "kinds": ("outfits", "jewelry", "cosmetics")},
-    {"id": "transit", "title": "出行与住宿", "kinds": ("hotel",)},
-    {"id": "life", "title": "娱乐与生活", "kinds": ("subscriptions",)},
+    {"id": "group", "title": "经营总览", "kinds": ()},
+    {"id": "departments", "title": "组织架构", "kinds": ()},
+    {"id": "staff", "title": "人员与去留", "kinds": ()},
+    {"id": "recruit", "title": "在招岗位", "kinds": ()},
 )
 
 KIND_TITLE = {
-    "groceries": "菜市场", "takeout": "外卖", "dining": "堂食", "drugs": "药房",
-    "outfits": "服装", "jewelry": "首饰", "cosmetics": "美妆", "hotel": "酒店",
-    "subscriptions": "会员订阅", "attractions": "景区门票",
+    "group": "总览", "departments": "部门", "staff": "人员", "recruit": "招聘",
 }
+
+
+def _load_company():
+    """智脑集团数据层（Market/company.py），按文件路径加载，不依赖包结构。"""
+    import importlib.util as _ilu
+    here = os.path.dirname(os.path.abspath(__file__))
+    cands = [
+        os.path.join(here, "..", "..", "DeepSeek_Harness_Amo_Market", "company.py"),
+        os.path.join(here, "..", "DeepSeek_Harness_Amo_Market", "company.py"),
+        os.path.join(here, "company.py"),
+    ]
+    for path in cands:
+        path = os.path.abspath(path)
+        if not os.path.exists(path):
+            continue
+        spec = _ilu.spec_from_file_location("amo_company_fin", path)
+        mod = _ilu.module_from_spec(spec)
+        spec.loader.exec_module(mod)  # type: ignore[union-attr]
+        return mod
+    raise RuntimeError("找不到 Market/company.py")
 
 
 def _row(name, category, price, unit="", note="", source="catalog", estimated=False,
@@ -477,101 +494,81 @@ def _row(name, category, price, unit="", note="", source="catalog", estimated=Fa
     }
 
 
+def _item(name, category, price, unit="", note="", extra=None):
+    row = _row(name, category, price, unit, note, source="company")
+    if extra:
+        row.update(extra)
+    return row
+
+
 def build(plugin, city: str = "", province: str = "", now: datetime = None) -> dict:
-    """聚合成一份 `market_data`：五个版块，每条都带价格/单位/来源/更新时间。"""
+    """世态改成「智脑集团经营盘子」（金融侧同源）。"""
     now = now or datetime.now()
-    factor, level = city_factor(city)
-    weekend = _weekend_factor(now)
+    co = _load_company()
+    rep = co.report()
     sections = []
-    items = {}
 
-    def add(kind, rows):
-        items.setdefault(kind, []).extend(rows)
+    overview = [
+        _item("月度营收", "总览", rep["revenue_total"], "万元", "确认收入合计"),
+        _item("综合毛利率", "总览", round(float(rep["gross_total"]) * 100, 1), "%", "算力与授权撑住毛利"),
+        _item("净利润", "总览", rep["net_profit"], "万元", "净利率 %.1f%%" % rep["margin"]),
+        _item("账面现金", "总览", rep["cash"], "万元", "可动用头寸"),
+        _item("应收账款", "总览", rep["receivable"], "万元", "账期 90 天起"),
+        _item("授信可用", "总览", rep["credit_available"], "万元",
+              "总额度 %.0f 万，已用 %.0f 万" % (rep["credit_line"], rep["credit_used"])),
+        _item("编制 / 在岗", "总览", rep["headcount"], "人",
+              "在岗 %d 人，缺编 %d 人" % (rep["onboard"], rep["vacancy"])),
+    ]
+    sections.append({"id": "group", "title": "智脑集团 · 经营总览",
+                     "count": len(overview), "items": overview})
 
-    for section in SECTIONS:
-        bucket = []
-        for kind in section["kinds"]:
-            if kind in ("hotel", "subscriptions"):
-                continue
-            try:
-                source_rows = plugin.items(kind) or []
-            except Exception:
-                source_rows = []
-            rows = []
-            for row in source_rows:
-                price = float(row.get("price") or 0)
-                if kind == "drugs":
-                    price = price
-                unit = str(row.get("unit") or "")
-                note = str(row.get("group") or row.get("shop") or row.get("style")
-                           or row.get("tier") or "")
-                rows.append(_row(row.get("name"), kind, price, unit or "份", note,
-                                 source="external" if kind in ("groceries", "takeout")
-                                 else "catalog",
-                                 list_price=row.get("list_price")))
-            add(kind, rows)
-            bucket.extend(rows)
-        if section["id"] == "transit":
-            hotels = []
-            for row in hotel_options(city, now):
-                item = _row(row["name"], "hotel", row["price"], "晚",
-                            "%s · %s" % (row["tier_name"], row.get("area") or row["note"]),
-                            source=row["source"], estimated=True)
-                item.update({"tier": row["tier"], "tier_name": row["tier_name"],
-                             "price_low": row["price_low"], "price_high": row["price_high"],
-                             "city": city})
-                hotels.append(item)
-            tickets = []
-            for quote in ticket_options(city, now=now):
-                item = _row(quote.get("name"), "ticket", quote.get("price"), "人",
-                            quote.get("note") or "", source="distance_formula",
-                            estimated=True)
-                item.update({"mode": quote.get("mode"), "mode_name": quote.get("mode_name"),
-                             "km": quote.get("km"), "minutes": quote.get("minutes"),
-                             "price_low": quote.get("price_low"),
-                             "price_high": quote.get("price_high"),
-                             "city": city})
-                tickets.append(item)
-            bucket.extend(hotels)
-            bucket.extend(tickets)
-            items["hotel"] = hotels
-            items["ticket"] = tickets
-        if section["id"] == "life":
-            subs = []
-            for row in subscriptions():
-                item = _row(row["name"], "subscription", row["price"], row.get("unit") or "月",
-                            row["note"])
-                item.update({"service": row.get("service"), "plan": row.get("plan")})
-                subs.append(item)
-            spots = []
-            for row in attraction_options(city):
-                item = _row(row.get("name"), "attraction", row.get("price"), "人",
-                            row.get("note") or "", estimated=bool(row.get("estimated")))
-                item["city"] = row.get("city") or ""
-                item["level"] = row.get("level") or ""
-                spots.append(item)
-            bucket.extend(subs)
-            bucket.extend(spots)
-            items["subscription"] = subs
-            items["attraction"] = spots
-        sections.append({
-            "id": section["id"], "title": section["title"],
-            "count": len(bucket), "items": bucket,
-        })
+    depts = []
+    for d in co.departments():
+        depts.append(_item(
+            d["name"], "部门", d["revenue"], "万/月",
+            "%s · 编制 %d／在岗 %d · %s" % (d["head"], d["headcount"], d["onboard"], d["kpi"]),
+            {"dept_id": d["id"], "head": d["head"], "budget": d["budget"],
+             "gross": d["gross"], "teams": [t["name"] for t in d["teams"]]},
+        ))
+    sections.append({"id": "departments", "title": "组织架构 · %d 个部门" % len(depts),
+                     "count": len(depts), "items": depts})
 
+    staff_rows = []
+    for row in co.fireable():
+        staff_rows.append(_item(
+            row["name"], "人员", row["severance"], "万赔偿",
+            "%s · %s（%s，绩效 %s）｜%s" % (row["dept"], row["post"], row["level"],
+                                        row["perf"], row["why"]),
+        ))
+    sections.append({"id": "staff", "title": "人员与去留 · 可动 %d 人" % len(staff_rows),
+                     "count": len(staff_rows), "items": staff_rows})
+
+    recruit_rows = []
+    for row in co.recruit_plan():
+        salary = str(row["salary"])
+        low = salary.split("~")[0] if "~" in salary else salary
+        try:
+            price = float(low)
+        except Exception:
+            price = 0.0
+        recruit_rows.append(_item(
+            row["post"], "招聘", price, "万/月",
+            "%s · 招 %d 人 · 到岗 %s ｜%s" % (row["dept"], row["need"], row["cycle"], row["why"]),
+        ))
+    sections.append({"id": "recruit", "title": "在招岗位 · %d 个" % len(recruit_rows),
+                     "count": len(recruit_rows), "items": recruit_rows})
+
+    items = {sec["id"]: sec["items"] for sec in sections}
     return {
         "version": DATA_VERSION,
         "city": str(city or ""), "province": str(province or ""),
-        "city_level": level, "city_factor": factor,
-        "weekend": weekend > 1.0,
+        "city_level": "", "city_factor": 1.0, "weekend": False,
         "built_at": now.strftime("%Y-%m-%d %H:%M"),
         "day": now.strftime("%Y-%m-%d"),
-        "sections": sections,
-        "items": items,
+        "sections": sections, "items": items,
         "counts": {key: len(value) for key, value in items.items()},
-        "note": "价格是估算，不是实时挂牌价；菜价来自公开市场数据，门票/酒店按城市档位。",
+        "note": "智脑集团经营盘子；买东西走网络实时报价再扣款。",
     }
-
 
 def save(path: str, payload: dict) -> bool:
     try:

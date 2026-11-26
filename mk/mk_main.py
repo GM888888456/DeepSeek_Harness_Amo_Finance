@@ -32,14 +32,12 @@ except Exception:  # pragma: no cover - 单测/CI 里没有 astrbot
     web_request = None
 
 try:
-    from .catalog import CATALOGS, counts, pick
+    from .np_compat import CATALOGS, counts, pick, persona_catalog
     from .pricing import PriceBook
-    from . import persona_catalog
     from . import nexus
 except ImportError:  # 单测/CI 按文件加载
-    from mk_catalog import CATALOGS, counts, pick  # type: ignore
+    from np_compat import CATALOGS, counts, pick, persona_catalog  # type: ignore
     from mk_pricing import PriceBook  # type: ignore
-    import mk_persona_catalog  # type: ignore
     import mk_nexus  # type: ignore
 
 try:

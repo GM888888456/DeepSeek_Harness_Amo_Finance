@@ -801,6 +801,10 @@ class AmoFinancePlugin(Star):
             for key in oldest[: max(1, len(records) - self.CHARGE_ID_KEEP)]:
                 records.pop(key, None)
 
+    def record_order(self, note: str, amount: float = 0.0) -> None:
+        """兼容旧调用：账单已由 charge() 写进 history，这里不再重复记。"""
+        logger.debug("[amo_fin] record_order 跳过（charge 已记账）：%s" % note)
+
     def charge(self, amount: float, reason: str = "", payee: str = "",
                from_savings: bool = False, request_id: str = "") -> dict[str, Any]:
         """花钱。返回 {ok, balance, short?...}。失败不抛异常。
@@ -2672,6 +2676,7 @@ class AmoFinancePlugin(Star):
     def _register_web_apis(self) -> None:
         routes = [
             ("/status", self.api_status, ["GET"]),
+            ("/bank", self.api_bank, ["GET", "POST"]),
             ("/health", self.api_health, ["GET"]),
             ("/salary", self.api_salary, ["POST"]),
             ("/invest", self.api_invest, ["GET", "POST"]),
@@ -2790,6 +2795,405 @@ class AmoFinancePlugin(Star):
         """我自己连没连上终端/记忆库。面板顶部那一行就看这个。"""
         self._sync_config()
         return self._json({"code": 0, "data": _link_probe(self)})
+
+    def _bank_mod(self):
+        """银行数据层（bank.py，跟着插件走）。"""
+        try:
+            from . import bank as _b  # type: ignore
+            return _b
+        except Exception:
+            pass
+        try:
+            import bank as _b  # type: ignore
+            return _b
+        except Exception:
+            pass
+        try:
+            import importlib.util as _ilu
+            path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bank.py")
+            spec = _ilu.spec_from_file_location("amo_bank_fin", path)
+            mod = _ilu.module_from_spec(spec)
+            spec.loader.exec_module(mod)  # type: ignore[union-attr]
+            return mod
+        except Exception as exc:
+            logger.debug("[amo_fin] 银行数据层加载失败: %s" % exc)
+            return None
+
+    def _book_path(self):
+        """账本路径：优先用插件自己的 data_dir，拿不到再退回 plugin_data。"""
+        try:
+            base = self._data_dir()
+        except Exception:
+            base = ""
+        if not base:
+            base = "/AstrBot/data/plugin_data/DeepSeek_Harness_Amo_Finance"
+        return os.path.join(base, "book.json")
+
+    def _sync_loaded(self):
+        """确保账本已经读进内存（self._ledger / self._state / self._history）。"""
+        if getattr(self, "_ledger", None) is None:
+            try:
+                self._load()
+            except Exception:
+                pass
+
+    def _load_book(self):
+        """给只读用途：插件内存里那份账本的 dict 视图。"""
+        self._sync_loaded()
+        return {
+            "ledger": {
+                "balance": self._ledger.balance,
+                "savings": self._ledger.savings,
+                "saving_rate": 1.5,
+                "own_car_full": bool(self._state.get("own_car_full")),
+                "own_house_full": bool(self._state.get("own_house_full")),
+                "car_desc": str(self._state.get("persona_car") or "宝马A8·贵A·00008"),
+                "house_desc": str(self._state.get("persona_house") or "观山湖三居室"),
+            },
+            "state": self._state,
+            "history": list(self._history),
+        }
+
+    def _save_book(self, book):
+        """把 dict 写回插件自己的账本并落盘（只动这几个字段，不再整份覆盖）。"""
+        self._sync_loaded()
+        led = (book or {}).get("ledger") or {}
+        if "balance" in led:
+            self._ledger.balance = round(float(led["balance"] or 0), 2)
+        if "savings" in led:
+            self._ledger.savings = round(float(led["savings"] or 0), 2)
+        for k in ("own_car_full", "own_house_full"):
+            if k in led:
+                self._state[k] = bool(led[k])
+        self._save()
+        return True
+
+    def _stocks_data(self, book=None):
+        """股票：直接用插件自带的行情与持仓（腾讯/大A 实时价、浮盈浮亏）。"""
+        rows = []
+        try:
+            sm = self.invest_summary(refresh=True)
+        except Exception as exc:
+            logger.debug("[amo_fin] 取行情失败: %s" % exc)
+            sm = {}
+        try:
+            rows.append({"name": "总市值", "code": "", "price": 0,
+                         "shares": 0, "value": round(float(sm.get("total_value") or 0), 2),
+                         "pnl": round(float(sm.get("pnl") or 0), 2),
+                         "category": "股票", "source": "bank", "summary": True})
+            _pct = sm.get("pnl_pct")
+            rows.append({"name": "浮动盈亏", "code": "", "price": 0,
+                         "shares": 0, "value": round(float(sm.get("pnl") or 0), 2),
+                         "pnl": round(float(sm.get("pnl") or 0), 2),
+                         "pnl_pct": _pct,
+                         "category": "股票", "source": "bank", "summary": True})
+            if sm.get("equity") is not None:
+                rows.append({"name": "总权益", "code": "", "price": 0, "shares": 0,
+                             "value": round(float(sm.get("equity") or 0), 2), "pnl": 0,
+                             "category": "股票", "source": "bank", "summary": True})
+        except Exception:
+            pass
+        for pos in (sm.get("positions") or []):
+            qty = int(pos.get("qty") or 0)
+            if qty <= 0:
+                continue
+            rows.append({
+                "name": pos.get("name") or pos.get("symbol") or "",
+                "code": pos.get("symbol") or "",
+                "price": round(float(pos.get("last") or 0), 2),
+                "shares": qty,
+                "value": round(float(pos.get("value") or 0), 2),
+                "cost": round(float(pos.get("cost") or 0), 2),
+                "pnl": round(float(pos.get("pnl") or 0), 2),
+                "pnl_pct": pos.get("pnl_pct"),
+                "currency": pos.get("currency") or "CNY",
+                "category": "股票", "source": "bank",
+            })
+        return rows
+
+    def _trade(self, code, shares, side="buy"):
+        """买卖走插件自己的投资接口（腾讯/大A 都能下），失败退回本地账本。"""
+        shares = max(1, int(shares or 0))
+        name = str(code or "").strip()
+        if not name:
+            return {"ok": False, "msg": "要买哪只？"}
+        try:
+            if side == "buy":
+                res = self.invest_buy(name, qty=shares)
+            else:
+                res = self.invest_sell(name, qty=shares)
+            if isinstance(res, dict) and res.get("ok"):
+                self._save()
+                return {"ok": True, "msg": res.get("reason") or res.get("msg") or "%s %s %d 股" % (side, name, shares),
+                        "balance": self._ledger.balance}
+            if isinstance(res, dict) and res.get("reason"):
+                return {"ok": False, "msg": res.get("reason")}
+        except Exception as exc:
+            logger.debug("[amo_fin] invest_%s 失败: %s" % (side, exc))
+        # 兜底：旧逻辑（只动账本与 state.stocks）
+        b = self._bank_mod()
+        st_ = b.stock(name) if b is not None else None
+        if not st_:
+            return {"ok": False, "msg": "行情里没有这只"}
+        price = float(st_["price"])
+        amount = round(price * shares, 2)
+        led, state, hist = self._ledger, self._state, self._history
+        held = state.setdefault("stocks", {})
+        if side == "buy":
+            if led.balance < amount:
+                return {"ok": False, "msg": "钱包不够：要 %.2f" % amount}
+            led.balance = round(led.balance - amount, 2)
+            held[st_["code"]] = int(held.get(st_["code"]) or 0) + shares
+        else:
+            have = int(held.get(st_["code"]) or 0)
+            if have < shares:
+                return {"ok": False, "msg": "只持有 %d 股" % have}
+            led.balance = round(led.balance + amount, 2)
+            held[st_["code"]] = have - shares
+        hist.append({"kind": "expense" if side == "buy" else "income", "amount": amount,
+                     "reason": "%s %s %d 股" % ("买入" if side == "buy" else "卖出", st_["name"], shares),
+                     "time": time.strftime("%m-%d %H:%M"), "ts": time.time(), "balance": led.balance})
+        del hist[:-HISTORY_LIMIT]
+        self._save()
+        return {"ok": True, "msg": "%s %s %d 股" % (side, st_["name"], shares), "balance": led.balance}
+
+    def _ensure_income(self):
+        """工资与年度分红入账（走插件自己的账本，一个月/一年各一次）。"""
+        try:
+            import time as _time
+            self._sync_loaded()
+            led, st, hist = self._ledger, self._state, self._history
+            month = _time.strftime("%Y-%m")
+            changed = False
+            def _push(amount, reason):
+                hist.append({"kind": "income", "amount": round(amount, 2), "reason": reason,
+                             "time": _time.strftime("%m-%d %H:%M"), "ts": _time.time(),
+                             "balance": led.balance})
+                del hist[:-HISTORY_LIMIT]
+            if st.get("last_salary_month") != month:
+                salary = float(st.get("salary_persona") or 150000)
+                net = round(salary * 0.78, 2)
+                led.balance = round(led.balance + net, 2)
+                st["salary_persona"] = salary
+                _push(net, "本月工资（税后）")
+                st["last_salary_month"] = month
+                changed = True
+            if not st.get("dividend_paid"):
+                div = 40000000.0
+                led.balance = round(led.balance + div, 2)
+                _push(div, "智脑集团 2026 年度分红（持股 35%）")
+                st["dividend_paid"] = True
+                changed = True
+            if changed:
+                self._save()
+                logger.info("[amo_fin] 入账完成，余额 %.2f" % led.balance)
+        except Exception as exc:
+            logger.debug("[amo_fin] 入账失败: %s" % exc)
+
+    def bank_data(self) -> dict:
+        """给面板用的银行数据：总览 / 部门 / 对公 / 对私 / 利率 / 信贷。"""
+        b = self._bank_mod()
+        if b is None:
+            return {"sections": [], "items": {}, "counts": {}}
+        prof = b.profile()
+        defs = b.departments()
+        items = {}
+        sections = []
+
+        overview = [
+            {"name": "总资产", "price": prof["assets"], "unit": "亿元", "note": "%s · %d 年" % (prof["type"], prof["since"])},
+            {"name": "存款余额", "price": prof["deposits"], "unit": "亿元", "note": "个人与对公合计"},
+            {"name": "贷款余额", "price": prof["loans"], "unit": "亿元", "note": "不良率 %.2f%%" % prof["npl"]},
+            {"name": "网点", "price": prof["branches"], "unit": "个", "note": "员工 %d 人" % prof["staff"]},
+            {"name": "集团授信", "price": b.GROUP_CREDIT["line"], "unit": "万元",
+             "note": "已用 %.0f 万 · 利率 %.2f%%" % (b.GROUP_CREDIT["used"], b.GROUP_CREDIT["rate"])},
+            {"name": "授信可用", "price": b.GROUP_CREDIT["line"] - b.GROUP_CREDIT["used"], "unit": "万元",
+             "note": "流动/固贷/银承都能用"},
+        ]
+        for x in overview:
+            x.update({"category": "总览", "source": "bank"})
+        items["group"] = overview
+        sections.append({"id": "group", "title": "经营总览", "count": len(overview), "items": overview})
+
+        depts = []
+        for d in defs:
+            depts.append({"name": d["name"], "price": d["headcount"], "unit": "人",
+                          "note": "%s · %s" % (d["head"], d["duty"]), "category": "部门",
+                          "head": d["head"], "kpi": d["kpi"], "duty": d["duty"], "source": "bank"})
+        items["departments"] = depts
+        sections.append({"id": "departments", "title": "总行架构 · %d 个部门" % len(depts),
+                         "count": len(depts), "items": depts})
+
+        corp = []
+        for p_ in b.products("corporate"):
+            corp.append({"name": p_["name"], "price": 0, "unit": "",
+                         "note": "%s · %s · %s｜%s" % (p_["limit"], p_["term"], p_["rate"], p_["need"]),
+                         "category": "对公", "source": "bank"})
+        items["corporate"] = corp
+        sections.append({"id": "corporate", "title": "对公产品 · %d 个" % len(corp),
+                         "count": len(corp), "items": corp})
+
+        retail = []
+        for p_ in b.products("retail"):
+            retail.append({"name": p_["name"], "price": 0, "unit": "",
+                           "note": "%s · %s · %s｜%s" % (p_["limit"], p_["term"], p_["rate"], p_["note"]),
+                           "category": "对私", "source": "bank"})
+        items["retail"] = retail
+        sections.append({"id": "retail", "title": "对私产品 · %d 个" % len(retail),
+                         "count": len(retail), "items": retail})
+
+        rates = []
+        for k, v in b.rates().items():
+            rates.append({"name": k, "price": v, "unit": "%", "note": "年化",
+                          "category": "利率", "source": "bank"})
+        items["rates"] = rates
+        sections.append({"id": "rates", "title": "利率表 · %d 项" % len(rates),
+                         "count": len(rates), "items": rates})
+
+        risk = []
+        for k, v in b.RISK.items():
+            risk.append({"name": k, "price": 0, "unit": "", "note": str(v),
+                         "category": "风控", "source": "bank"})
+        items["risk"] = risk
+        sections.append({"id": "risk", "title": "风控口径", "count": len(risk), "items": risk})
+
+        # 她自己的私人资产（读本插件的账本）
+        private = []
+        try:
+            import json as _json
+            import glob as _glob
+            _path = None
+            _cands = _glob.glob("/AstrBot/data/plugin_data/*Amo_Finance/book.json")
+            # 优先读本插件目录（DeepSeek_Harness_Amo_Finance），别读到旧的 Astrbot_Amo_Finance
+            _cands = sorted(_cands, key=lambda x: 0 if "DeepSeek_Harness" in x else 1)
+            _cands.append(self._book_path())
+            for _cand in _cands:
+                if _cand and os.path.exists(_cand):
+                    _path = _cand
+                    break
+            if _path is None:
+                raise RuntimeError("book.json 没找到")
+            with open(_path, encoding="utf-8") as _f:
+                _book = _json.load(_f) or {}
+            _led = _book.get("ledger") or {}
+            _state = _book.get("state") or {}
+            def _n(v):
+                try:
+                    return round(float(v or 0), 2)
+                except Exception:
+                    return 0.0
+            private = [
+                {"name": "现金", "price": _n(_led.get("balance")), "unit": "元",
+                 "note": "钱包里能动的", "category": "私人", "source": "bank"},
+                {"name": "储蓄", "price": _n(_led.get("savings") or _led.get("saving")), "unit": "元",
+                 "note": "年化 %.1f%%" % _n(_led.get("saving_rate") or 1.5),
+                 "category": "私人", "source": "bank"},
+                {"name": "车子", "price": 0, "unit": "",
+                 "note": "%s（%s）" % (_led.get("car_desc") or "宝马A8·贵A·00008",
+                                      "全款" if (_led.get("own_car_full") or _state.get("persona_car")) else "按揭"),
+                 "category": "私人", "source": "bank"},
+                {"name": "房子", "price": 0, "unit": "",
+                 "note": "%s（%s）" % (_led.get("house_desc") or "观山湖三居室",
+                                      "全款" if (_led.get("own_house_full") or _state.get("persona_house")) else "按揭"),
+                 "category": "私人", "source": "bank"},
+            ]
+        except Exception as exc:
+            logger.debug("[amo_fin] 读私人账本失败: %s" % exc)
+        _book = self._load_book()
+        stocks = self._stocks_data(_book)
+        items["stocks"] = stocks
+        sections.append({"id": "stocks", "title": "股票 · %d 只" % len(stocks),
+                         "count": len(stocks), "items": stocks})
+
+        bills = []
+        for h in reversed((_book.get("history") or [])[-60:]):
+            kind = str(h.get("kind") or "expense")
+            income = kind in ("income", "interest")
+            note = "%s %s" % (h.get("time") or "", h.get("reason") or "")
+            if h.get("payee"):
+                note += "·" + str(h.get("payee"))
+            bills.append({"name": h.get("time") or "", "price": h.get("amount") or 0,
+                          "unit": "元", "note": note.strip(),
+                          "sign": "+" if income else "-",
+                          "category": "账单", "source": "bank"})
+        for o in reversed((_book.get("orders") or [])[-40:]):
+            note = "%s %s" % (o.get("ts", ""), o.get("note", ""))
+            income = str(o.get("note") or "").startswith("卖出")
+            bills.append({"name": o.get("ts", ""), "price": o.get("amount") or 0, "unit": "元",
+                          "note": note.strip(), "sign": "+" if income else "-",
+                          "category": "账单", "source": "bank"})
+        items["bills"] = bills
+        sections.append({"id": "bills", "title": "账单 · %d 条" % len(bills),
+                         "count": len(bills), "items": bills})
+
+        if not private:
+            private = [
+                {"name": "现金", "price": 0, "unit": "元", "note": "账本没读到",
+                 "category": "私人", "source": "bank"},
+                {"name": "储蓄", "price": 0, "unit": "元", "note": "账本没读到",
+                 "category": "私人", "source": "bank"},
+            ]
+        items["private"] = private
+        sections.append({"id": "private", "title": "她的私人资产", "count": len(private),
+                         "items": private})
+
+        return {"sections": sections, "items": items,
+                "counts": {k: len(v) for k, v in items.items()},
+                "bank": {"name": prof["name"], "president": prof["president"], "note": prof["note"]}}
+
+    async def api_bank(self):
+        """银行面板的数据与动作。
+
+        action=credit 时用 amount/months/kind/debt/collateral 试算一笔企业贷。
+        """
+        params = {}
+        try:
+            if web_request is not None and hasattr(web_request, "query"):
+                params.update(dict(web_request.query))
+        except Exception:
+            pass
+        try:
+            body = await self._payload()
+            if isinstance(body, dict):
+                params.update(body)
+        except Exception:
+            pass
+        action = str(params.get("action") or "").strip().lower()
+        b = self._bank_mod()
+        if b is None:
+            return self._json({"code": 1, "msg": "银行数据层没加载上"})
+        if action == "owned":
+            book = self._load_book()
+            led = book.setdefault("ledger", {})
+            for key, flag in (("own_car_full", "car"), ("own_house_full", "house")):
+                val = params.get(flag)
+                if val is not None:
+                    led[key] = str(val).lower() in ("1", "true", "on", "yes", "是")
+            self._save_book(book)
+            return self._json({"code": 0, "data": {
+                "ok": True,
+                "car": bool(led.get("own_car_full")),
+                "house": bool(led.get("own_house_full")),
+                "msg": "车子：%s；房子：%s" % (
+                    "全款" if led.get("own_car_full") else "按揭",
+                    "全款" if led.get("own_house_full") else "按揭")}})
+
+        if action in ("buy", "sell"):
+            res = self._trade(params.get("code"), params.get("shares") or 100, action)
+            return self._json({"code": 0, "data": res})
+
+        if action == "credit":
+            try:
+                amount = float(params.get("amount") or 0)
+                months = int(float(params.get("months") or 12))
+                kind = str(params.get("kind") or "流动资金贷款")
+                debt = float(params.get("debt") or 52)
+                cover = float(params.get("collateral") or 1.2)
+            except Exception:
+                return self._json({"code": 1, "msg": "参数不对"})
+            res = b.credit_apply(amount, months, kind, debt, cover)
+            return self._json({"code": 0, "data": res})
+        return self._json({"code": 0, "data": self.bank_data()})
 
     async def api_status(self):
         self._sync_config()
