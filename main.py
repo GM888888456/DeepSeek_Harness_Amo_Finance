@@ -201,20 +201,20 @@ class AmoFinancePlugin(Star):
         return self._bool("invest_aggressive", True)
 
     def _leverage(self) -> int:
-        """杠杆倍数：1–500。她自己调过就用她的，否则用配置。"""
+        """杠杆倍数：1–50。她自己调过就用她的，否则用配置。"""
         value = self._state.get("leverage_override")
         if value is None:
-            value = self._cfg("invest_leverage", 3)
+            value = self._cfg("invest_leverage", 10)
         try:
             value = int(float(value or 3))
         except Exception:
             value = 3
-        return max(1, min(100, value))
+        return max(1, min(50, value))
 
     def set_leverage(self, times: int) -> dict[str, Any]:
-        """她自己决定开多大杠杆（1–100）。"""
+        """她自己决定开多大杠杆（1–50）。"""
         try:
-            value = max(1, min(100, int(float(times or 0))))
+            value = max(1, min(50, int(float(times or 0))))
         except Exception:
             return {"ok": False, "reason": "倍数不对"}
         self._state["leverage_override"] = value
@@ -2981,7 +2981,7 @@ class AmoFinancePlugin(Star):
             if not st.get("dividend_paid"):
                 div = 40000000.0
                 led.balance = round(led.balance + div, 2)
-                _push(div, "智脑集团 2026 年度分红（持股 35%）")
+                _push(div, "中国计算智脑集团 2026 年度分红（持股 35%）")
                 st["dividend_paid"] = True
                 changed = True
             if changed:
