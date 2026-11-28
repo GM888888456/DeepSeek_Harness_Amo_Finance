@@ -107,7 +107,7 @@ def apply_loan(data_dir: str, borrower: str, amount: float, months: int = 12,
            "outstanding": check["amount"], "months": months, "rate": check["rate"],
            "status": "approved", "applied_at": _now(), "approved_at": _now(),
            "next_due": time.strftime("%Y-%m-%d", time.localtime(time.time()+30*86400)),
-           "paid": 0.0}
+           "paid": 0.0, "interest_paid": 0.0, "principal_paid": 0.0}
     s["loans"].append(row)
     if is_group:
         s["credit_group_used"] = round(float(s.get("credit_group_used") or 0) + float(row["principal"]), 2)
@@ -135,15 +135,24 @@ def repay(data_dir: str, loan_id: str, amount: float) -> Dict[str, Any]:
     for loan in s["loans"]:
         if loan.get("id") == loan_id:
             if loan.get("status") not in ("active", "approved"): return {"ok": False, "reason": "贷款不可还款"}
-            paid = min(amount, float(loan.get("outstanding") or 0))
-            loan["outstanding"] = round(float(loan["outstanding"]) - paid, 2)
+            outstanding = float(loan.get("outstanding") or 0)
+            paid = min(amount, outstanding + max(0.0, outstanding * float(loan.get("rate") or 0) / 100.0 / 12.0))
+            # 每次还款先付当期利息，再冲本金；本金才减少负债和集团授信占用。
+            interest_due = round(outstanding * float(loan.get("rate") or 0) / 100.0 / 12.0, 2)
+            interest_paid = min(paid, interest_due)
+            principal_paid = min(outstanding, max(0.0, paid - interest_paid))
+            loan["outstanding"] = round(outstanding - principal_paid, 2)
             loan["paid"] = round(float(loan.get("paid") or 0) + paid, 2)
+            loan["interest_paid"] = round(float(loan.get("interest_paid") or 0) + interest_paid, 2)
+            loan["principal_paid"] = round(float(loan.get("principal_paid") or 0) + principal_paid, 2)
             if "智脑" in str(loan.get("borrower") or "") or "计算" in str(loan.get("borrower") or ""):
-                s["credit_group_used"] = round(max(0.0, float(s.get("credit_group_used") or 0) - paid), 2)
+                s["credit_group_used"] = round(max(0.0, float(s.get("credit_group_used") or 0) - principal_paid), 2)
             s["cash"]["clearing"] = round(float(s["cash"].get("clearing") or 0) + paid, 2)
             if loan["outstanding"] <= 0.01: loan["outstanding"] = 0.0; loan["status"] = "closed"
-            _event(s, "loan_repaid", loan=loan_id, amount=paid, outstanding=loan["outstanding"])
-            save(data_dir, s); return {"ok": True, "loan": dict(loan), "paid": paid}
+            _event(s, "loan_repaid", loan=loan_id, amount=paid, principal=principal_paid, interest=interest_paid,
+                   outstanding=loan["outstanding"])
+            save(data_dir, s); return {"ok": True, "loan": dict(loan), "paid": paid,
+                                       "principal_paid": principal_paid, "interest_paid": interest_paid}
     return {"ok": False, "reason": "没有这笔贷款"}
 
 def snapshot(data_dir: str) -> Dict[str, Any]:
