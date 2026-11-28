@@ -31,6 +31,7 @@ def load(data_dir: str) -> Dict[str, Any]:
     s.setdefault("loans", [])
     s.setdefault("deposits", [])
     s.setdefault("events", [])
+    s.setdefault("credit_group_used", float(base.GROUP_CREDIT.get("used") or 0))
     if not isinstance(s.get("cash"), dict):
         s["cash"] = {"vault": 0.0, "clearing": 100000.0}
     else:
@@ -91,6 +92,13 @@ def apply_loan(data_dir: str, borrower: str, amount: float, months: int = 12,
                collateral_cover: float = 1.2) -> Dict[str, Any]:
     s = load(data_dir)
     is_group = "智脑" in str(borrower or "") or "计算" in str(borrower or "")
+    if is_group:
+        group_line = float(base.GROUP_CREDIT.get("line") or 0)
+        group_used = float(s.get("credit_group_used") or 0)
+        if amount > max(0.0, group_line - group_used):
+            return {"ok": False, "stage": "approval",
+                    "application": {"ok": False, "verdict": "批不了（集团授信不足）",
+                                    "reasons": ["集团动态授信只剩 %.2f 万，不够 %.2f 万" % (max(0.0, group_line - group_used), amount)]}}
     check = base.credit_apply(amount, months, kind, debt_ratio, collateral_cover, group=is_group)
     if not check.get("ok"):
         return {"ok": False, "stage": "approval", "application": check}
@@ -100,7 +108,10 @@ def apply_loan(data_dir: str, borrower: str, amount: float, months: int = 12,
            "status": "approved", "applied_at": _now(), "approved_at": _now(),
            "next_due": time.strftime("%Y-%m-%d", time.localtime(time.time()+30*86400)),
            "paid": 0.0}
-    s["loans"].append(row); _event(s, "loan_approved", loan=row["id"], borrower=row["borrower"], amount=row["principal"])
+    s["loans"].append(row)
+    if is_group:
+        s["credit_group_used"] = round(float(s.get("credit_group_used") or 0) + float(row["principal"]), 2)
+    _event(s, "loan_approved", loan=row["id"], borrower=row["borrower"], amount=row["principal"])
     save(data_dir, s)
     return {"ok": True, "loan": dict(row), "plan": check["plan"]}
 
@@ -127,6 +138,8 @@ def repay(data_dir: str, loan_id: str, amount: float) -> Dict[str, Any]:
             paid = min(amount, float(loan.get("outstanding") or 0))
             loan["outstanding"] = round(float(loan["outstanding"]) - paid, 2)
             loan["paid"] = round(float(loan.get("paid") or 0) + paid, 2)
+            if "智脑" in str(loan.get("borrower") or "") or "计算" in str(loan.get("borrower") or ""):
+                s["credit_group_used"] = round(max(0.0, float(s.get("credit_group_used") or 0) - paid), 2)
             s["cash"]["clearing"] = round(float(s["cash"].get("clearing") or 0) + paid, 2)
             if loan["outstanding"] <= 0.01: loan["outstanding"] = 0.0; loan["status"] = "closed"
             _event(s, "loan_repaid", loan=loan_id, amount=paid, outstanding=loan["outstanding"])
@@ -144,9 +157,12 @@ def snapshot(data_dir: str) -> Dict[str, Any]:
     return {"bank": base.profile(), "accounts": len(s["accounts"]), "deposits_live": round(deposits,2),
             "loans_live": round(loans,2), "active_loans": len(active), "overdue_loans": len(overdue),
             "cash_clearing": clearing, "liquidity": liquidity,
+            "credit_group_used": round(float(s.get("credit_group_used") or 0), 2),
+            "credit_group_left": round(max(0.0, float(base.GROUP_CREDIT.get("line") or 0) - float(s.get("credit_group_used") or 0)), 2),
             "events": list(s["events"][-20:]), "state": s}
 
 def reset(data_dir: str) -> Dict[str, Any]:
     s = {"accounts": [], "loans": [], "deposits": [], "events": [],
+         "credit_group_used": float(base.GROUP_CREDIT.get("used") or 0),
          "cash": {"vault": 0.0, "clearing": 100000.0}}
     save(data_dir, s); return snapshot(data_dir)
