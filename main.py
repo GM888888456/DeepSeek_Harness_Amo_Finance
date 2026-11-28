@@ -2796,6 +2796,19 @@ class AmoFinancePlugin(Star):
         self._sync_config()
         return self._json({"code": 0, "data": _link_probe(self)})
 
+    def _bank_live(self):
+        """银行实时业务层：账户/存款/授信/放款/还款。"""
+        try:
+            from . import bank_live as _bl  # type: ignore
+            return _bl
+        except Exception:
+            pass
+        try:
+            import bank_live as _bl  # type: ignore
+            return _bl
+        except Exception:
+            return None
+
     def _bank_mod(self):
         """银行数据层（bank.py，跟着插件走）。"""
         try:
@@ -3182,6 +3195,33 @@ class AmoFinancePlugin(Star):
             res = self._trade(params.get("code"), params.get("shares") or 100, action)
             return self._json({"code": 0, "data": res})
 
+        live = self._bank_live()
+        data_dir = self._data_dir()
+        if action in ("open_account", "account"):
+            res = live.open_account(data_dir, str(params.get("owner") or "阿墨"), str(params.get("kind") or "个人结算账户")) if live else {"ok": False, "reason": "实时银行层未加载"}
+            return self._json({"code": 0 if res.get("ok") else 1, "data": res})
+        if action == "deposit":
+            try: amount = float(params.get("amount") or 0)
+            except Exception: amount = 0
+            res = live.deposit(data_dir, str(params.get("owner") or "阿墨"), amount, str(params.get("term") or "活期")) if live else {"ok": False, "reason": "实时银行层未加载"}
+            return self._json({"code": 0 if res.get("ok") else 1, "data": res})
+        if action in ("loan_apply", "loan"):
+            try:
+                amount = float(params.get("amount") or 0); months = int(float(params.get("months") or 12))
+                debt = float(params.get("debt") or 52); cover = float(params.get("collateral") or 1.2)
+            except Exception:
+                return self._json({"code": 1, "msg": "参数不对"})
+            res = live.apply_loan(data_dir, str(params.get("borrower") or "中国计算智脑集团"), amount, months,
+                                  str(params.get("kind") or "流动资金贷款"), debt, cover) if live else {"ok": False, "reason": "实时银行层未加载"}
+            return self._json({"code": 0 if res.get("ok") else 1, "data": res})
+        if action == "loan_disburse":
+            res = live.disburse(data_dir, str(params.get("loan_id") or "")) if live else {"ok": False, "reason": "实时银行层未加载"}
+            return self._json({"code": 0 if res.get("ok") else 1, "data": res})
+        if action == "loan_repay":
+            try: amount = float(params.get("amount") or 0)
+            except Exception: amount = 0
+            res = live.repay(data_dir, str(params.get("loan_id") or ""), amount) if live else {"ok": False, "reason": "实时银行层未加载"}
+            return self._json({"code": 0 if res.get("ok") else 1, "data": res})
         if action == "credit":
             try:
                 amount = float(params.get("amount") or 0)
@@ -3193,7 +3233,10 @@ class AmoFinancePlugin(Star):
                 return self._json({"code": 1, "msg": "参数不对"})
             res = b.credit_apply(amount, months, kind, debt, cover)
             return self._json({"code": 0, "data": res})
-        return self._json({"code": 0, "data": self.bank_data()})
+        data = self.bank_data()
+        if live:
+            data["live"] = live.snapshot(data_dir)
+        return self._json({"code": 0, "data": data})
 
     async def api_status(self):
         self._sync_config()
