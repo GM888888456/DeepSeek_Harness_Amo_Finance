@@ -79,7 +79,8 @@ def apply_loan(data_dir: str, borrower: str, amount: float, months: int = 12,
                kind: str = "流动资金贷款", debt_ratio: float = 52.0,
                collateral_cover: float = 1.2) -> Dict[str, Any]:
     s = load(data_dir)
-    check = base.credit_apply(amount, months, kind, debt_ratio, collateral_cover, group=False)
+    is_group = "智脑" in str(borrower or "") or "计算" in str(borrower or "")
+    check = base.credit_apply(amount, months, kind, debt_ratio, collateral_cover, group=is_group)
     if not check.get("ok"):
         return {"ok": False, "stage": "approval", "application": check}
     row = {"id": _id("LOAN"), "borrower": str(borrower or "客户"),
