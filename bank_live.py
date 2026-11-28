@@ -36,6 +36,11 @@ def load(data_dir: str) -> Dict[str, Any]:
     else:
         s["cash"].setdefault("vault", 0.0)
         s["cash"].setdefault("clearing", 100000.0)
+    # 兼容旧版空状态：只有完全没有业务历史时才注入银行初始流动性；
+    # 有真实历史的 0 头寸必须保留，不能偷偷补钱。
+    if (float(s["cash"].get("clearing") or 0) <= 0
+            and not s["loans"] and not s["deposits"] and not s["events"]):
+        s["cash"]["clearing"] = 100000.0
     return s
 
 def save(data_dir: str, state: Dict[str, Any]) -> bool:
