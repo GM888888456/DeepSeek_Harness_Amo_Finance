@@ -147,6 +147,9 @@ def disburse(data_dir: str, loan_id: str) -> Dict[str, Any]:
     for loan in s["loans"]:
         if loan.get("id") == loan_id:
             if loan.get("status") != "approved": return {"ok": False, "reason": "当前状态不能放款"}
+            collateral = loan.get("collateral") or {}
+            if collateral.get("type") and collateral.get("status") != "active":
+                return {"ok": False, "reason": "应收质押尚未生效，不能放款"}
             amount = float(loan["principal"])
             if float(s["cash"].get("clearing") or 0) < amount:
                 return {"ok": False, "reason": "清算头寸不足，暂不能放款"}
@@ -154,6 +157,22 @@ def disburse(data_dir: str, loan_id: str) -> Dict[str, Any]:
             s["cash"]["clearing"] = round(float(s["cash"].get("clearing") or 0) - amount, 2)
             _event(s, "loan_disbursed", loan=loan_id, amount=loan["principal"])
             save(data_dir, s); return {"ok": True, "loan": dict(loan)}
+    return {"ok": False, "reason": "没有这笔贷款"}
+
+def confirm_collateral(data_dir: str, loan_id: str) -> Dict[str, Any]:
+    s = load(data_dir)
+    for loan in s["loans"]:
+        if loan.get("id") != loan_id:
+            continue
+        collateral = loan.get("collateral") or {}
+        if not collateral.get("type"):
+            return {"ok": True, "loan": dict(loan)}
+        collateral["status"] = "active"
+        loan["collateral"] = collateral
+        _event(s, "collateral_pledged", loan=loan_id, type=collateral.get("type"),
+               amount=collateral.get("amount"), ref=collateral.get("ref"))
+        save(data_dir, s)
+        return {"ok": True, "loan": dict(loan)}
     return {"ok": False, "reason": "没有这笔贷款"}
 
 def repay(data_dir: str, loan_id: str, amount: float) -> Dict[str, Any]:
