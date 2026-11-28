@@ -89,7 +89,9 @@ def deposit(data_dir: str, owner: str, amount: float, term: str = "活期") -> D
 
 def apply_loan(data_dir: str, borrower: str, amount: float, months: int = 12,
                kind: str = "流动资金贷款", debt_ratio: float = 52.0,
-               collateral_cover: float = 1.2) -> Dict[str, Any]:
+               collateral_cover: float = 1.2, collateral_type: str = "",
+               collateral_amount: float = 0.0, eligible_amount: float = 0.0,
+               collateral_ref: str = "") -> Dict[str, Any]:
     s = load(data_dir)
     is_group = "智脑" in str(borrower or "") or "计算" in str(borrower or "")
     if is_group:
@@ -107,13 +109,38 @@ def apply_loan(data_dir: str, borrower: str, amount: float, months: int = 12,
            "outstanding": check["amount"], "months": months, "rate": check["rate"],
            "status": "approved", "applied_at": _now(), "approved_at": _now(),
            "next_due": time.strftime("%Y-%m-%d", time.localtime(time.time()+30*86400)),
-           "paid": 0.0, "interest_paid": 0.0, "principal_paid": 0.0}
+           "paid": 0.0, "interest_paid": 0.0, "principal_paid": 0.0,
+           "collateral": {
+               "type": str(collateral_type or ""),
+               "amount": round(float(collateral_amount or 0), 2),
+               "eligible_amount": round(float(eligible_amount or 0), 2),
+               "ref": str(collateral_ref or ""),
+               "status": "pending_pledge" if collateral_type else "none",
+           }}
     s["loans"].append(row)
     if is_group:
         s["credit_group_used"] = round(float(s.get("credit_group_used") or 0) + float(row["principal"]), 2)
     _event(s, "loan_approved", loan=row["id"], borrower=row["borrower"], amount=row["principal"])
     save(data_dir, s)
     return {"ok": True, "loan": dict(row), "plan": check["plan"]}
+
+def cancel_loan(data_dir: str, loan_id: str, reason: str = "cancelled") -> Dict[str, Any]:
+    """取消尚未放款的贷款审批；释放动态授信占用。"""
+    s = load(data_dir)
+    for loan in s["loans"]:
+        if loan.get("id") != loan_id:
+            continue
+        if loan.get("status") != "approved":
+            return {"ok": False, "reason": "只有尚未放款的审批可以取消"}
+        if "智脑" in str(loan.get("borrower") or "") or "计算" in str(loan.get("borrower") or ""):
+            s["credit_group_used"] = round(max(0.0, float(s.get("credit_group_used") or 0) -
+                                              float(loan.get("principal") or 0)), 2)
+        loan["status"] = "cancelled"
+        loan["cancel_reason"] = str(reason or "cancelled")
+        _event(s, "loan_cancelled", loan=loan_id, reason=loan["cancel_reason"])
+        save(data_dir, s)
+        return {"ok": True, "loan": dict(loan)}
+    return {"ok": False, "reason": "没有这笔贷款"}
 
 def disburse(data_dir: str, loan_id: str) -> Dict[str, Any]:
     s = load(data_dir)
