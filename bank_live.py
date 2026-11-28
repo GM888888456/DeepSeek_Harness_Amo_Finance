@@ -31,7 +31,11 @@ def load(data_dir: str) -> Dict[str, Any]:
     s.setdefault("loans", [])
     s.setdefault("deposits", [])
     s.setdefault("events", [])
-    s.setdefault("cash", {"vault": 0.0, "clearing": 0.0})
+    if not isinstance(s.get("cash"), dict):
+        s["cash"] = {"vault": 0.0, "clearing": 100000.0}
+    else:
+        s["cash"].setdefault("vault", 0.0)
+        s["cash"].setdefault("clearing", 100000.0)
     return s
 
 def save(data_dir: str, state: Dict[str, Any]) -> bool:
@@ -100,10 +104,10 @@ def disburse(data_dir: str, loan_id: str) -> Dict[str, Any]:
     for loan in s["loans"]:
         if loan.get("id") == loan_id:
             if loan.get("status") != "approved": return {"ok": False, "reason": "当前状态不能放款"}
-            loan["status"] = "active"; loan["disbursed_at"] = _now()
             amount = float(loan["principal"])
             if float(s["cash"].get("clearing") or 0) < amount:
                 return {"ok": False, "reason": "清算头寸不足，暂不能放款"}
+            loan["status"] = "active"; loan["disbursed_at"] = _now()
             s["cash"]["clearing"] = round(float(s["cash"].get("clearing") or 0) - amount, 2)
             _event(s, "loan_disbursed", loan=loan_id, amount=loan["principal"])
             save(data_dir, s); return {"ok": True, "loan": dict(loan)}
@@ -130,10 +134,14 @@ def snapshot(data_dir: str) -> Dict[str, Any]:
     overdue = [x for x in active if x.get("next_due") and x["next_due"] < time.strftime("%Y-%m-%d")]
     deposits = sum(float(x.get("principal") or 0) for x in s["deposits"] if x.get("status") == "active")
     loans = sum(float(x.get("outstanding") or 0) for x in active)
+    clearing = round(float(s["cash"].get("clearing") or 0), 2)
+    liquidity = "healthy" if clearing >= max(1000.0, loans * 0.10) else "tight"
     return {"bank": base.profile(), "accounts": len(s["accounts"]), "deposits_live": round(deposits,2),
             "loans_live": round(loans,2), "active_loans": len(active), "overdue_loans": len(overdue),
+            "cash_clearing": clearing, "liquidity": liquidity,
             "events": list(s["events"][-20:]), "state": s}
 
 def reset(data_dir: str) -> Dict[str, Any]:
-    s = {"accounts": [], "loans": [], "deposits": [], "events": [], "cash": {"vault": 0.0, "clearing": 0.0}}
+    s = {"accounts": [], "loans": [], "deposits": [], "events": [],
+         "cash": {"vault": 0.0, "clearing": 100000.0}}
     save(data_dir, s); return snapshot(data_dir)
