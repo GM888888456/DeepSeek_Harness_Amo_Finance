@@ -71,7 +71,9 @@ def deposit(data_dir: str, owner: str, amount: float, term: str = "活期") -> D
             "三年": base.RATES["存款三年"], "大额存单三年": base.RATES["大额存单三年"]}.get(term, base.RATES["存款活期"])
     row = {"id": _id("DEP"), "owner": str(owner or "客户"), "principal": amount,
            "term": term, "rate": rate, "status": "active", "opened_at": _now()}
-    s["deposits"].append(row); _event(s, "deposit", id=row["id"], owner=row["owner"], amount=amount, term=term)
+    s["deposits"].append(row)
+    s["cash"]["clearing"] = round(float(s["cash"].get("clearing") or 0) + amount, 2)
+    _event(s, "deposit", id=row["id"], owner=row["owner"], amount=amount, term=term)
     save(data_dir, s)
     return {"ok": True, "deposit": dict(row)}
 
@@ -99,6 +101,10 @@ def disburse(data_dir: str, loan_id: str) -> Dict[str, Any]:
         if loan.get("id") == loan_id:
             if loan.get("status") != "approved": return {"ok": False, "reason": "当前状态不能放款"}
             loan["status"] = "active"; loan["disbursed_at"] = _now()
+            amount = float(loan["principal"])
+            if float(s["cash"].get("clearing") or 0) < amount:
+                return {"ok": False, "reason": "清算头寸不足，暂不能放款"}
+            s["cash"]["clearing"] = round(float(s["cash"].get("clearing") or 0) - amount, 2)
             _event(s, "loan_disbursed", loan=loan_id, amount=loan["principal"])
             save(data_dir, s); return {"ok": True, "loan": dict(loan)}
     return {"ok": False, "reason": "没有这笔贷款"}
@@ -112,6 +118,7 @@ def repay(data_dir: str, loan_id: str, amount: float) -> Dict[str, Any]:
             paid = min(amount, float(loan.get("outstanding") or 0))
             loan["outstanding"] = round(float(loan["outstanding"]) - paid, 2)
             loan["paid"] = round(float(loan.get("paid") or 0) + paid, 2)
+            s["cash"]["clearing"] = round(float(s["cash"].get("clearing") or 0) + paid, 2)
             if loan["outstanding"] <= 0.01: loan["outstanding"] = 0.0; loan["status"] = "closed"
             _event(s, "loan_repaid", loan=loan_id, amount=paid, outstanding=loan["outstanding"])
             save(data_dir, s); return {"ok": True, "loan": dict(loan), "paid": paid}
